@@ -3,14 +3,13 @@
 //
 
 #ifndef DS_PROJECT_AMIR_H
-#define DS_PROJECT_AMIR_H
 
+#define DS_PROJECT_AMIR_H
 
 
 class amir {
 
 };
-
 
 
 #endif //DS_PROJECT_AMIR_H
