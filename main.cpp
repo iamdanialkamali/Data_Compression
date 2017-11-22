@@ -39,6 +39,61 @@ string getdata(string path,int m) {
 
 
     }
+string ref_slash(string path){
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==':'){
+            path = path.substr(j+2);
+        }
+    }
+    path+='/';
+    return path;
+}
+int ref_lvl_counter(string path){
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==':'){
+            path = path.substr(j+2);
+        }
+    }
+    path+='/';
+    short i = -1;
+    for(char c:path){
+        if(c=='/'){
+            i++;
+        }
+    }
+    return i;
+}
+string get_ref_data(string path,int m) {
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==':'){
+            path = path.substr(j+2);
+        }
+    }
+    path+='/';
+    string data;
+    int head = 0;
+    int last = 0;
+    for (int i = 0; i <path.length() ; ++i) {
+        if(m==1){
+            if(path[i]=='/'){
+            head=i;
+            }
+        }
+        if(m==0){
+            if(path[i]=='/'){
+                last=i;
+                break;
+            }
+        }
+        else{
+            if(path[i]=='/'){
+                m--;
+            }
+        }
+    }
+    return path.substr(head+1,last-head-1);
+
+}
 long getthree(unsigned long data,int i){
     if(i==0){
         return  data /pow(10, 3*3);
@@ -144,7 +199,6 @@ unsigned int convertor(string time){
 
 }
 void xmlparser(string path){
-    long long x=0;
     fstream input;
     input.open(path);
     char c;
@@ -152,72 +206,96 @@ void xmlparser(string path){
         input>>c;
         switch(c){
             case '<':
-                char buffer[800];
+                char buffer[1600];
+                char tag[20];
                 char w='s' ;
                 input>>w;
 
                 if (w=='L'){
-                    //cout<<"Log:"<<'\n';
+                  //  cout<<"Log:"<<'\n';
+                    //input.ignore(3, '>');
                     input.seekp(2,ios::cur);
-                    x++;
+
                 }
                 if (w=='H'){
                     input>>w;
                     if(w=='e'){
-                      //  cout << "Head:";
+                        //cout << "Head:";
+                       // input.ignore(3, '>');
                         input.seekp(3, ios::cur);
-                        input.get(buffer, 100, '<');
-                      //  cout << buffer << '\n';
+                        input.get(buffer, 1600, '<');
+                       // cout << buffer << '\n';
                     }
                     if(w=='o'){
-                  //      cout << "Host:";
+                       // cout << "Host:";
+                      //  input.ignore(4, '>');
                         input.seekp(3, ios::cur);
-                        input.get(buffer, 100, '<');
-                    //    cout << buffer << '\n';
+                        input.get(buffer, 800, '<');
+                      //  cout << buffer << '\n';
                     }
                 }
                 if (w=='T'){
-                    //cout<<"Time:";
+                   // cout<<"Time:";
+                    //input.ignore(6, '>');
                     input.seekp(5,ios::cur);
-                    input.get(buffer,100,'<');
-                    //cout<<convertor(buffer)<<'\n';
+                    input.get(buffer,800,'<');
+                   // cout<<buffer<<'\n';
                 }
                 if (w=='U'){
-                    //cout<<"UserAgent:";
+                   // cout<<"UserAgent:";
+                    //input.ignore(10, '>');
                     input.seekp(9,ios::cur);
-                    input.get(buffer,100,'<');
-                    //cout<<buffer<<'\n';
+                    input.get(buffer,800,'<');
+                  //  cout<<buffer<<'\n';
                 }
                 if (w=='R'){
+                    //input.ignore(3, '>');
                     input.seekp(1,ios::cur);
                     input>>w;
                     if(w=='f'){
                         cout<<"Referer:";
+                       // input.ignore(6, '>');
                         input.seekp(5,ios::cur);
-                        input.get(buffer,100,'<');
+                        input.get(buffer,800,'<');
                         cout<<buffer<<'\n';
                     } else if(w=='s'){
-                       // cout<<"Response Code:";
+                      //  cout<<"Response Code:";
+                        //input.ignore(11, '>');
                         input.seekp(10,ios::cur);
-                        input.get(buffer,100,'<');
-                        //cout<<buffer<<'\n';
+                        input.get(buffer,800,'<');
+                       // cout<<buffer<<'\n';
                     }
                     else if(w=='q'){
-                        //cout<<"RequestSize:";
+                      //  cout<<"RequestSize:";
                         input.seekp(9,ios::cur);
-                        input.get(buffer,400,'<');
-                    //    cout<<buffer<<'\n';
+                        input.get(buffer,800,'<');
+                       // cout<<buffer<<'\n';
                     }
 
                 }
         }
+
     }
-    cout<<x;
+}
+void xmlparser2(string path){
+        fstream input;
+        input.open(path);
+        char c;
+        while (!input.eof()){
+            input>>c;
+            char buffer[1600];
+            char tag[20];
+            input.get(buffer,1600,'>');
+            cout<<buffer<<'\n';
+
+    }
 }
 union mydata{
     int ip;
     unsigned int array[6];
 };
+
+////////////// Structs//////////////////////////////
 struct node{
     bool isleaf = false;
     bool islog = false;
@@ -225,7 +303,43 @@ struct node{
     node* child;
     mydata data;
 };
-struct adressnode{
+struct addressnode{
+    unsigned int id;
+    string name;
+    addressnode * next;
+};
+class addressList{
+    addressnode* root;
+};
+struct namenode{
+    string name;
+    namenode * next;
+};
+class namelist{
+public:
+    unsigned int len=0;
+    namenode* root;
+    namelist(){
+        root = new namenode();
+    }
+    unsigned int insert(string file){
+        namenode *tempnode=root;
+        unsigned  int cnt=0;
+      /*  tempnode->next=new namenode;
+        tempnode->next->name="444";*/
+        while(tempnode->next){
+            if(tempnode->name==file){
+                return cnt;
+            }
+            tempnode =tempnode->next;
+            cnt++;
+
+        }
+        tempnode->next=new namenode();
+        tempnode->name=file;
+        return cnt;
+
+    }
 };
 class Iplist {
 public:
@@ -461,25 +575,169 @@ public:
 
     }
 };
+struct refnode{
+    unsigned int id;
+    string name;
+    refnode* child;
+    refnode* sibiling;
+};
+class reflist {
+public:
+    unsigned int count ;
+    refnode *root=new refnode();
+    reflist() {
+        count=0;
+
+    }
+
+    int insert(refnode*sub,short lvl,string path) {
+        short final_lvl = ref_lvl_counter(path);
+        if (lvl==1){
+            string data = get_ref_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new refnode;
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, path);
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new refnode;
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, path);
+                }
+
+            }
+            /*if(sub->child== nullptr){
+                sub->child= new refnode;
+                sub->child->name=data;
+                insert(sub->child,lvl+1,path);
+                return;
+            } else{
+
+            }
+
+            if(sub== nullptr){
+               sub= new refnode;
+                sub->name=data;
+                insert(sub,lvl+1,path);
+                return;
+            } else{
+                if(data==sub->name){
+                    insert(sub,lvl+1,path);
+                    return;
+                } else{
+                    while(sub->child!= nullptr){
+                        if(sub->name==data){
+                            insert(sub,lvl+1,path);
+                            return;
+                        }
+                        if (sub->sibiling != nullptr){
+                            sub = sub->sibiling;
+                        } else{
+                            break;
+                        }
+                    }
+                    sub->sibiling=new refnode;
+                    sub->sibiling->name=data;
+                    insert(sub->sibiling,lvl+1,path);
+                    return;
+                }
+
+            }*/
+        }
+        else if (lvl==final_lvl){
+            string data = get_ref_data(path,final_lvl);
+            if (sub->child== nullptr) {
+                sub->child = new refnode;
+                sub->child->name=data;
+                count++;
+                sub->child->id=count;
+                return count;
+
+            } else{
+                sub=sub->child;
+                while(sub->sibiling!= nullptr){
+                    if(sub->name==data){
+                        while(sub->child!= nullptr){
+                            sub=sub->child;
+                        }
+
+                    }
+                }
+
+            }
+            return sub->id;
+        } else {
+            string data = get_ref_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new refnode;
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, path);
+
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new refnode;
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, path);
+
+                }
+
+            }
+
+        }
+
+
+    }
+};
+
 /*
     holder * findnode(node* node1, short data , short lvl){
-        node *tempnode =node1->child;
-        if(tempnode== nullptr){
+        node *root =node1->child;
+        if(root== nullptr){
             node* newnode   =new node();
             newnode->data=data;
             node1->child=newnode;
             return newnode;
         }
         else{
-            while (tempnode->next!= nullptr) {
-                if (tempnode->data == data){
-                    return tempnode;
+            while (root->next!= nullptr) {
+                if (root->data == data){
+                    return root;
                 }
-                tempnode=tempnode->next;
+                root=root->next;
             }if(lvl==3){
                 holder *holder1 = new holder ;
                 holder1->data = data;
-                tempnode->child = holder1;
+                root->child = holder1;
                 time_node * time_node1= new time_node;
                 time_node1->time=500;
                 holder1->time=time_node1;
@@ -489,14 +747,14 @@ public:
 
                 node *newnode = new node();
                 newnode->data = data;
-                tempnode->next = newnode;
+                root->next = newnode;
                 return newnode;
             }
         }
     }
     void insert(long key, node *node1){
         for (int i = 0; i <4 ; ++i) {
-            node *tempnode=findnode(node1,getthree(key,i),i);
+            node *root=findnode(node1,getthree(key,i),i);
         }
     }
     void print(){
@@ -510,11 +768,16 @@ public:
         }
     }*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+//long int codes[66]={1010111,2,1010110,01
+//
+//
+//
+101000010010,011010001,0110100001000,11000101,101100,01101000011,2,0000000,1011011,0000010,01100010,11000100,01100011,2,011111,1100011,111000,0000011,2,1010101,0110100001010,2,2,111001,00011110,1101001,011011,001,1110111,010001,1010100,10100,01101000010011,0000001,111010,1110110,110101,1110,110000,0110000,01001,11001,10111,1101000,0110100001011,01101001,00011111,0110100000,1011010,0101,01110,2,11011,011110,00010,000110,010000,00001,011001,0001110,0110101,11111,100};
 
+ */
 using namespace std ;
-
 char chars[66]={'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V', 'W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r', 's','t','u','v','w','x','y','z','/','.','\t','1','2','3','4','5','6','7','8','9','0','?'};
-//long int codes[66]={1010111,2,1010110,01101000010010,011010001,0110100001000,11000101,101100,01101000011,2,0000000,1011011,0000010,01100010,11000100,01100011,2,011111,1100011,111000,0000011,2,1010101,0110100001010,2,2,111001,00011110,1101001,011011,001,1110111,010001,1010100,10100,01101000010011,0000001,111010,1110110,110101,1110,110000,0110000,01001,11001,10111,1101000,0110100001011,01101001,00011111,0110100000,1011010,0101,01110,2,11011,011110,00010,000110,010000,00001,011001,0001110,0110101,11111,100};
 short coodes[66]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65};
 int counts[66] ={};
 int findLenght(string str){
@@ -970,8 +1233,24 @@ void xmlparser1(string path) {
     }
 }
 int main() {
-
-    xmlparser1("/home/alan/Documents/C++/DS_Project/xml.xml");
+  /*  namelist  *list = new namelist;
+    cout<<list->insert("a")<<'\n';
+    cout<<list->insert("a")<<'\n';
+    cout<<list->insert("b")<<'\n';
+    cout<<list->insert("c")<<'\n';
+    cout<<list->insert("a")<<'\n';
+    cout<<list->insert("alan")<<'\n';
+    cout<<list->insert("documents")<<'\n';
+    cout<<list->insert("home")<<'\n';
+    cout<<list->insert("Documents")<<'\n';
+    cout<<list->insert("slam")<<'\n';
+    namenode *temp = list->root;
+    while (temp){
+        cout<<temp->name<<'\n';
+        temp=temp->next;
+    }
+    */
+    ///xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
     /*
     xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
     Iplist *iplist = new Iplist();
@@ -993,7 +1272,18 @@ int main() {
     //string string1 = getdata("/25/221351/51513/",1);
     //  cout<<string1;
     */
-    return 0;
+    //string ss =get_ref_data("http://ariogames.ir/gamepage/1102",1);
+
+   // int lvl = ref_lvl_counter("http://ariogames.ir/gamepage/1102");
+    reflist * khar = new reflist;
+    int num1 = khar->insert(khar->root,1,"https://a/b/c");
+    int num2 = khar->insert(khar->root,1,"http://a/c/d/f");
+    int num3 = khar->insert(khar->root,1,"https://w/f/ww");
+    int num4 = khar->insert(khar->root,1,"http://w/f/ww");
+
+
+    cout<<num1<<'\n'<<num2<<'\n'<<num3<<'\n'<<num4<<'\n';
+    return 1;
 }
 
 
