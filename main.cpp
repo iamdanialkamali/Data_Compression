@@ -11,11 +11,10 @@
 #include <string>
 
 
-
 using namespace std;
 
 int16_t responsecode[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
-
+////////////////////////////////////////////////////////usefull methods/////////////////////////////////////////////////////
 string getdata(string path,int m) {
     string data;
     int i = 0;
@@ -52,6 +51,7 @@ int ref_lvl_counter(string path){
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==':'){
             path = path.substr(j+2);
+            break;
         }
     }
     path+='/';
@@ -63,10 +63,20 @@ int ref_lvl_counter(string path){
     }
     return i;
 }
+string user_changer(string ss){
+    for(char c:ss){
+        if (c=='/'){
+            c=' ';
+        }
+    }
+    return ss;
+
+}
 string get_ref_data(string path,int m) {
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==':'){
             path = path.substr(j+2);
+            break;
         }
     }
     path+='/';
@@ -92,6 +102,60 @@ string get_ref_data(string path,int m) {
         }
     }
     return path.substr(head+1,last-head-1);
+
+}
+string get_user_data(string user , int m){
+
+    user = ' '+ user +' ';
+    string data;
+    int head = 0;
+    int last = 0;
+    for (int i = 0; i <user.length() ; ++i) {
+        if(m==1){
+            if(user[i]==' '){
+                head=i;
+            }
+            if(user[i]=='/'){
+                head=i;
+            }
+        }
+        if(m==0){
+            if(user[i]==' '){
+                last=i;
+                break;
+            }
+
+            if(user[i]=='/'){
+                last=i;
+                break;
+            }
+        }
+        else{
+            if(user[i]==' '){
+                m--;
+            }
+            if(user[i]=='/'){
+                m--;
+            }
+
+        }
+    }
+    return user.substr(head+1,last-head-1);
+
+
+}
+int user_lvl_counter(string user){
+    user = ' '+ user +' ';
+    short i = -1;
+    for(char c:user){
+        if(c==' '){
+            i++;
+        }
+        if(c=='/'){
+            i++;
+        }
+    }
+    return i;
 
 }
 long getthree(unsigned long data,int i){
@@ -198,122 +262,147 @@ unsigned int convertor(string time){
 
 
 }
-void xmlparser(string path){
-    fstream input;
-    input.open(path);
-    char c;
-    while (!input.eof()){
-        input>>c;
-        switch(c){
-            case '<':
-                char buffer[1600];
-                char tag[20];
-                char w='s' ;
-                input>>w;
 
-                if (w=='L'){
-                  //  cout<<"Log:"<<'\n';
-                    //input.ignore(3, '>');
-                    input.seekp(2,ios::cur);
 
-                }
-                if (w=='H'){
-                    input>>w;
-                    if(w=='e'){
-                        //cout << "Head:";
-                       // input.ignore(3, '>');
-                        input.seekp(3, ios::cur);
-                        input.get(buffer, 1600, '<');
-                       // cout << buffer << '\n';
-                    }
-                    if(w=='o'){
-                       // cout << "Host:";
-                      //  input.ignore(4, '>');
-                        input.seekp(3, ios::cur);
-                        input.get(buffer, 800, '<');
-                      //  cout << buffer << '\n';
-                    }
-                }
-                if (w=='T'){
-                   // cout<<"Time:";
-                    //input.ignore(6, '>');
-                    input.seekp(5,ios::cur);
-                    input.get(buffer,800,'<');
-                   // cout<<buffer<<'\n';
-                }
-                if (w=='U'){
-                   // cout<<"UserAgent:";
-                    //input.ignore(10, '>');
-                    input.seekp(9,ios::cur);
-                    input.get(buffer,800,'<');
-                  //  cout<<buffer<<'\n';
-                }
-                if (w=='R'){
-                    //input.ignore(3, '>');
-                    input.seekp(1,ios::cur);
-                    input>>w;
-                    if(w=='f'){
-                        cout<<"Referer:";
-                       // input.ignore(6, '>');
-                        input.seekp(5,ios::cur);
-                        input.get(buffer,800,'<');
-                        cout<<buffer<<'\n';
-                    } else if(w=='s'){
-                      //  cout<<"Response Code:";
-                        //input.ignore(11, '>');
-                        input.seekp(10,ios::cur);
-                        input.get(buffer,800,'<');
-                       // cout<<buffer<<'\n';
-                    }
-                    else if(w=='q'){
-                      //  cout<<"RequestSize:";
-                        input.seekp(9,ios::cur);
-                        input.get(buffer,800,'<');
-                       // cout<<buffer<<'\n';
-                    }
-
-                }
-        }
-
-    }
-}
-void xmlparser2(string path){
-        fstream input;
-        input.open(path);
-        char c;
-        while (!input.eof()){
-            input>>c;
-            char buffer[1600];
-            char tag[20];
-            input.get(buffer,1600,'>');
-            cout<<buffer<<'\n';
-
-    }
-}
+////////////// Structs//////////////////////////////
 union mydata{
     int ip;
     unsigned int array[6];
 };
-
-////////////// Structs//////////////////////////////
 struct node{
     bool isleaf = false;
     bool islog = false;
     node* next;
     node* child;
     mydata data;
-};
+};///  Ip
 struct addressnode{
     unsigned int id;
     string name;
     addressnode * next;
 };
-class addressList{
-    addressnode* root;
-};
 struct namenode{
     string name;
     namenode * next;
+};
+struct refnode{
+    unsigned int id;
+    string name;
+    refnode* child  ;
+    refnode* sibiling ;
+};// Referer
+struct usernode{
+    unsigned  int id =0;
+    string name;
+    usernode* child;
+    usernode* sibiling;
+};//UserAgent
+////////////////////////////////////////Classes///////////////////////////////////////////
+class addressList{
+    addressnode* root;
+};
+class reflist {
+public:
+    unsigned int count ;
+    refnode *root=new refnode();
+    reflist() {
+        count=0;
+
+    }
+
+    int insert(refnode*sub,short lvl,string path) {
+        if(path==""){
+            return 0;
+        }
+        short final_lvl = ref_lvl_counter(path);
+        if (lvl==1){
+            string data = get_ref_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new refnode();
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, path);
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new refnode();
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, path);
+                }
+
+            }
+        }
+        else if (lvl==final_lvl){
+            string data = get_ref_data(path,final_lvl);
+            if (sub->child== nullptr) {
+                sub->child = new refnode();
+                sub->child->name=data;
+                count++;
+                sub->child->id=count;
+                return count;
+
+            } else{
+                sub=sub->child;
+                while(sub->sibiling!= nullptr){
+                    if(sub->name==data){
+                        while(sub->child!= nullptr){
+                            sub=sub->child;
+                        }
+
+                    }
+                }
+
+            }
+            return sub->id;
+        } else {
+            string data = get_ref_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new refnode();
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, path);
+
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new refnode();
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, path);
+
+                }
+
+            }
+
+        }
+
+
+    }
 };
 class namelist{
 public:
@@ -325,8 +414,8 @@ public:
     unsigned int insert(string file){
         namenode *tempnode=root;
         unsigned  int cnt=0;
-      /*  tempnode->next=new namenode;
-        tempnode->next->name="444";*/
+        /*  tempnode->next=new namenode;
+          tempnode->next->name="444";*/
         while(tempnode->next){
             if(tempnode->name==file){
                 return cnt;
@@ -346,15 +435,14 @@ public:
     Iplist() {
         node *first;
     }
-    node *root=new node;
+    node *root=new node();
     void insert(unsigned int time , node*sub ,int lvl,long value){
         if (lvl==1){
             short data = getthree(value,lvl-1);
             if(sub->child== nullptr){
-                node * newnode = new node;
-                newnode->data.ip=data;
-                sub->child=newnode;
-                insert(time,newnode,lvl+2,value);
+                sub->child = new node();
+                sub->child->data.ip=data;
+                insert(time,sub->child,lvl+2,value);
                 return;
             }
             insert(time,sub->child,lvl+1,value);
@@ -363,10 +451,9 @@ public:
         if (lvl==2){
             short data = getthree(value, lvl - 2);
             if(sub== nullptr){
-                node* newnode = new node;
-                sub=newnode;
-                newnode->data.ip=data;
-                insert(time,newnode,lvl+1,value);
+                sub = new node();
+                sub->data.ip=data;
+                insert(time,sub,lvl+1,value);
                 return;
             } else{
                 if(data==sub->data.ip){
@@ -384,51 +471,50 @@ public:
                             break;
                         }
                     }
-                    node *newnode =new node;
-                    newnode->data.ip=data;
-                    sub->next=newnode;
-                    insert(time,newnode,lvl+1,value);
+
+                    sub->next =new node();
+                    sub->next->data.ip=data;
+                    insert(time,sub->next,lvl+1,value);
                     return;
                 }
 
             }
-          /*  short data = getthree(value,lvl-2);
-            sub=sub->child;
-            if(sub->next==nullptr){
-            if(sub->child== nullptr){
-                node * newnode = new node;
-                newnode->data.ip=data;
-                sub->child=newnode;
-                insert(time,newnode,lvl+1,value);
+            /*  short data = getthree(value,lvl-2);
+              sub=sub->child;
+              if(sub->next==nullptr){
+              if(sub->child== nullptr){
+                  node * newnode = new node;
+                  newnode->data.ip=data;
+                  sub->child=newnode;
+                  insert(time,newnode,lvl+1,value);
 
-            } else {
-                node *newnode = new node;
-                newnode->data.ip = data;
-                sub->next = newnode;
-                insert(time, newnode, lvl + 1, value);
-                }
-            }
-            else{
-                while(sub->next!= nullptr){
-                    if(sub->data.ip==data){
-                        insert(time,sub->child,lvl+1,value);
-                    }
-                    sub=sub->next;
-                }
-                node *newnode =new node;
-                newnode->data.ip=data;
-                sub->next=newnode;
-                insert(time,newnode,lvl+1,value);
-            }*/
+              } else {
+                  node *newnode = new node;
+                  newnode->data.ip = data;
+                  sub->next = newnode;
+                  insert(time, newnode, lvl + 1, value);
+                  }
+              }
+              else{
+                  while(sub->next!= nullptr){
+                      if(sub->data.ip==data){
+                          insert(time,sub->child,lvl+1,value);
+                      }
+                      sub=sub->next;
+                  }
+                  node *newnode =new node;
+                  newnode->data.ip=data;
+                  sub->next=newnode;
+                  insert(time,newnode,lvl+1,value);
+              }*/
 
         }
         if (lvl==3) {
             short data = getthree(value, lvl - 2);
             if(sub->child== nullptr){
-                node* newnode = new node;
-                sub->child=newnode;
-                newnode->data.ip=data;
-                insert(time,newnode,lvl+1,value);
+               sub->child = new node();
+                sub->child->data.ip=data;
+                insert(time,sub->child,lvl+1,value);
                 return;
             } else{
                 sub = sub->child;
@@ -447,10 +533,9 @@ public:
                             break;
                         }
                     }
-                    node *newnode =new node;
-                    newnode->data.ip=data;
-                    sub->next=newnode;
-                    insert(time,newnode,lvl+1,value);
+                    sub->next =new node();
+                    sub->next->data.ip=data;
+                    insert(time,sub->next,lvl+1,value);
                     return;
                 }
 
@@ -513,10 +598,9 @@ public:
             }*/
             short data = getthree(value, lvl - 2);
             if(sub->child== nullptr){
-                node* newnode = new node;
-                sub->child=newnode;
-                newnode->data.ip=data;
-                insert(time,newnode,lvl+1,value);
+                sub->child= new node();
+                sub->child->data.ip=data;
+                insert(time,sub->child,lvl+1,value);
                 return;
             } else{
                 sub = sub->child;
@@ -531,14 +615,14 @@ public:
                         }
                         if (sub->next != nullptr){
                             sub = sub->next;
-                    } else{
+                        } else{
                             break;
                         }
                     }
-                    node *newnode =new node;
-                    newnode->data.ip=data;
-                    sub->next=newnode;
-                    insert(time,newnode,lvl+1,value);
+
+                    sub->next =new node();
+                    sub->next->data.ip=data;
+                    insert(time,sub->next,lvl+1,value);
                     return;
                 }
 
@@ -548,11 +632,11 @@ public:
         if (lvl==5){
             unsigned int data =getthree(value,lvl-2)-1+1;
             if (sub->child== nullptr) {
-                node *leaf = new node;
+                node *leaf = new node();
                 leaf->data.ip = data;
                 sub->child = leaf;
                 leaf->isleaf = true;
-                node *data_holder = new node;
+                node *data_holder = new node();
                 data_holder->islog = true;
                 leaf->child = data_holder;
                 data_holder->data.array[0] = time;
@@ -563,7 +647,7 @@ public:
                         while(sub->child!= nullptr){
                             sub=sub->child;
                         }
-                        node *newnode = new node;
+                        node *newnode = new node();
                         sub->child=newnode;
                         newnode->islog= true;
                         newnode->data.array[0]=time;
@@ -575,94 +659,21 @@ public:
 
     }
 };
-struct refnode{
-    unsigned int id;
-    string name;
-    refnode* child;
-    refnode* sibiling;
-};
-class reflist {
+class userlist{
 public:
     unsigned int count ;
-    refnode *root=new refnode();
-    reflist() {
+    usernode *root=new usernode();
+    userlist() {
         count=0;
-
     }
 
-    int insert(refnode*sub,short lvl,string path) {
-        short final_lvl = ref_lvl_counter(path);
-        if (lvl==1){
-            string data = get_ref_data(path,lvl);
-            if (sub->child == nullptr) {
-                sub->child = new refnode;
-                sub->child->name= data;
-                return insert(sub->child, lvl + 1, path);
+    int insert(usernode*sub,short lvl,string user) {
+        short final_lvl = user_lvl_counter(user);
 
-            } else {
-                sub = sub->child;
-                if (data == sub->name) {
-                    return insert(sub, lvl + 1, path);
-                } else {
-                    while (sub != nullptr) {
-                        if (sub->name == data) {
-                            return insert(sub, lvl + 1, path);
-
-                        }
-                        if (sub->sibiling != nullptr) {
-                            sub = sub->sibiling;
-                        } else {
-                            break;
-                        }
-                    }
-                    sub->sibiling= new refnode;
-                    sub->sibiling->name=data;
-                    return insert(sub->sibiling, lvl + 1, path);
-                }
-
-            }
-            /*if(sub->child== nullptr){
-                sub->child= new refnode;
-                sub->child->name=data;
-                insert(sub->child,lvl+1,path);
-                return;
-            } else{
-
-            }
-
-            if(sub== nullptr){
-               sub= new refnode;
-                sub->name=data;
-                insert(sub,lvl+1,path);
-                return;
-            } else{
-                if(data==sub->name){
-                    insert(sub,lvl+1,path);
-                    return;
-                } else{
-                    while(sub->child!= nullptr){
-                        if(sub->name==data){
-                            insert(sub,lvl+1,path);
-                            return;
-                        }
-                        if (sub->sibiling != nullptr){
-                            sub = sub->sibiling;
-                        } else{
-                            break;
-                        }
-                    }
-                    sub->sibiling=new refnode;
-                    sub->sibiling->name=data;
-                    insert(sub->sibiling,lvl+1,path);
-                    return;
-                }
-
-            }*/
-        }
-        else if (lvl==final_lvl){
-            string data = get_ref_data(path,final_lvl);
+        if (lvl==final_lvl){
+            string data = get_user_data(user,final_lvl);
             if (sub->child== nullptr) {
-                sub->child = new refnode;
+                sub->child = new usernode();
                 sub->child->name=data;
                 count++;
                 sub->child->id=count;
@@ -682,21 +693,21 @@ public:
             }
             return sub->id;
         } else {
-            string data = get_ref_data(path,lvl);
+            string data = get_user_data(user,lvl);
             if (sub->child == nullptr) {
-                sub->child = new refnode;
+                sub->child = new usernode();
                 sub->child->name= data;
-                return insert(sub->child, lvl + 1, path);
+                return insert(sub->child, lvl + 1, user);
 
             } else {
                 sub = sub->child;
                 if (data == sub->name) {
-                    return insert(sub, lvl + 1, path);
+                    return insert(sub, lvl + 1, user);
 
                 } else {
                     while (sub != nullptr) {
                         if (sub->name == data) {
-                            return insert(sub, lvl + 1, path);
+                            return insert(sub, lvl + 1, user);
 
                         }
                         if (sub->sibiling != nullptr) {
@@ -705,19 +716,190 @@ public:
                             break;
                         }
                     }
-                    sub->sibiling= new refnode;
+                    sub->sibiling= new usernode();
                     sub->sibiling->name=data;
-                    return insert(sub->sibiling, lvl + 1, path);
+                    return insert(sub->sibiling, lvl + 1, user);
 
                 }
 
             }
 
+        }        if (lvl==1){
+            string data = get_user_data(user,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new usernode();
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, user);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, user);
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, user);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new usernode();
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, user);
+                }
+
+            }
         }
 
 
     }
 };
+
+
+
+////////////////////////////////////////Parser/////////////////////////////
+void xmlparser(string path) {
+     userlist *UserAgentList = new userlist();
+     Iplist * HostList = new Iplist();
+     reflist * RefererList = new reflist();
+     namelist * NameList = new namelist();
+     addressList * AddressList = new addressList();
+
+    string Head;
+    string UserAgent;
+    string host;
+    string referer;
+    string requestsize;
+    string responsecode;
+    string time;
+    fstream input;
+    input.open(path);
+    char c;
+    bool one = true;
+    while (!input.eof()) {
+        input >> c;
+        switch (c) {
+            case '<':
+                char buffer[20000];
+                char tag[20];
+                char w = '0';
+                input >> w;
+                if (w == 'L') {
+                    if(!one) {
+                        cout<<"LOG: \n";
+                        cout << "head :" << Head << '\n';
+                        cout << "useragent: " ;
+                        cout<< UserAgentList->insert(UserAgentList->root, 1, UserAgent) << '\n';
+                        cout << "referer: " << RefererList->insert(RefererList->root, 1, referer) << '\n';
+                        cout << "rq size: " << requestsize << '\n';
+                        cout << "res code: " << get_code_index(str_to_int(responsecode)) << '\n';
+                        cout << "time : " << convertor(time) << '\n';
+                        cout << "host : " << host << '\n';
+                        HostList->insert(convertor(time), HostList->root, 1, str_to_ip(host));
+                    }
+                    one = false;
+                    time ="";
+                    UserAgent="";
+                    Head ="";
+                    host="";
+                    referer = "";
+                    requestsize="";
+                    responsecode="";
+
+
+                    input.ignore(3, '>');
+                    //  input.seekp(2,ios::cur);
+
+                }
+                if (w == 'H') {
+                    input >> w;
+                    if (w == 'e') {
+                        //cout << "Head:";
+                        input.ignore(3, '>');
+                        //input.seekp(3, ios::cur);
+                        input.get(buffer, 2000, '<');
+                        Head = buffer;
+                        //cout << buffer << '\n';
+
+                    }
+                    if (w == 'o') {
+                       /// cout << "Host:";
+                        input.ignore(4, '>');
+                        //  input.seekp(3, ios::cur);
+                        input.get(buffer, 800, '<');
+                        host = buffer;
+                        // cout << buffer << '\n';
+
+                    }
+                }
+                if (w == 'T') {
+                    ///cout << "Time:";
+                    input.ignore(6, '>');
+                    // input.seekp(5,ios::cur);
+                    input.get(buffer, 800, '<');
+                    time = buffer;
+                    //cout<<buffer<<'\n';
+                }
+                if (w == 'U') {
+                    ///cout << "UserAgent:";
+                    input.ignore(10, '>');
+                    //input.seekp(9,ios::cur);
+                    input.get(buffer, 2000, '<');
+                    UserAgent = buffer;
+                    ///cout<<buffer<<'\n';
+                }
+                if (w == 'R') {
+                    //input.ignore(3, '>');
+                    input.seekp(1, ios::cur);
+                    input >> w;
+                    if (w == 'f') {
+                        //cout << "Referer:";
+                        input.ignore(6, '>');
+                        // input.seekp(5,ios::cur);
+                        input.get(buffer, 2000, '<');
+                        referer = buffer;
+                        //cout<<buffer<<'\n';
+                    } else if (w == 's') {
+                        //cout << "Response Code:";
+                        input.ignore(11, '>');
+
+                        //input.seekp(10,ios::cur);
+                        input.get(buffer, 2000, '<');
+                        responsecode = buffer;
+                        //cout<<buffer<<'\n';
+                    } else if (w == 'q') {
+                       // cout << "RequestSize:";
+                        input.ignore(11, '>');
+
+                        //input.seekp(9,ios::cur);
+                        input.get(buffer, 2000, '<');
+                        requestsize = buffer;
+                        //cout<<buffer<<'\n';
+                    }
+
+                }
+
+        }
+
+
+    }
+    cout << "head :" << Head << '\n';
+    cout << "useragent: " << UserAgentList->insert(UserAgentList->root,1,UserAgent) << '\n';
+    cout << "referer: " << RefererList->insert(RefererList->root,1,referer) << '\n';
+    cout << "rq size: " << requestsize << '\n';
+    cout << "res code: " << get_code_index( str_to_int(responsecode))  << '\n';
+    cout << "time : " << convertor(time) << '\n';
+    cout << "host : " << host << '\n';
+    HostList->insert(convertor(time),HostList->root,1,str_to_ip(host));
+
+}
+
+
+
 
 /*
     holder * findnode(node* node1, short data , short lvl){
@@ -776,11 +958,11 @@ public:
 101000010010,011010001,0110100001000,11000101,101100,01101000011,2,0000000,1011011,0000010,01100010,11000100,01100011,2,011111,1100011,111000,0000011,2,1010101,0110100001010,2,2,111001,00011110,1101001,011011,001,1110111,010001,1010100,10100,01101000010011,0000001,111010,1110110,110101,1110,110000,0110000,01001,11001,10111,1101000,0110100001011,01101001,00011111,0110100000,1011010,0101,01110,2,11011,011110,00010,000110,010000,00001,011001,0001110,0110101,11111,100};
 
  */
-using namespace std ;
-char chars[66]={'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V', 'W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r', 's','t','u','v','w','x','y','z','/','.','\t','1','2','3','4','5','6','7','8','9','0','?'};
+
+/*char chars[66]={'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V', 'W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r', 's','t','u','v','w','x','y','z','/','.','\t','1','2','3','4','5','6','7','8','9','0','?'};
 short coodes[66]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65};
 int counts[66] ={};
-int findLenght(string str){
+/*int findLenght(string str){
     string keys[27] = {"Mozilla/", "Windows/", "NT/", "Win64/", "AppleWebKit/", "KHTML/", "like/", "Gecko/", "Chrome/", "Safari/", "x64/",
                        ".", "(", ")", ",", ";", "0", "1", "2","3","4","5","6","7","8","9"," "};
     int i = 0;
@@ -1232,7 +1414,8 @@ void xmlparser1(string path) {
         }
     }
 }
-int main() {
+*/
+ int main() {
   /*  namelist  *list = new namelist;
     cout<<list->insert("a")<<'\n';
     cout<<list->insert("a")<<'\n';
@@ -1250,7 +1433,7 @@ int main() {
         temp=temp->next;
     }
     */
-    ///xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
+    xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
     /*
     xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
     Iplist *iplist = new Iplist();
@@ -1272,17 +1455,16 @@ int main() {
     //string string1 = getdata("/25/221351/51513/",1);
     //  cout<<string1;
     */
-    //string ss =get_ref_data("http://ariogames.ir/gamepage/1102",1);
-
-   // int lvl = ref_lvl_counter("http://ariogames.ir/gamepage/1102");
-    reflist * khar = new reflist;
-    int num1 = khar->insert(khar->root,1,"https://a/b/c");
-    int num2 = khar->insert(khar->root,1,"http://a/c/d/f");
-    int num3 = khar->insert(khar->root,1,"https://w/f/ww");
-    int num4 = khar->insert(khar->root,1,"http://w/f/ww");
-
-
-    cout<<num1<<'\n'<<num2<<'\n'<<num3<<'\n'<<num4<<'\n';
+    /*reflist *khar = new reflist();
+  //  khar->insert(khar->root,1,"http://localhost:9020");
+   /* string ss =get_ref_data("http://localhost:9020",1);
+    int ssss = ref_lvl_counter("http://localhost:9020");
+    int lvl = ref_lvl_counter("https://test.ariogames.ir/news/31");
+ /*   Iplist * khar = new Iplist;
+    khar->insert(55,khar->root,1,192168001002);
+    khar->insert(55,khar->root,1,192168011002);
+    khar->insert(55,khar->root,1,192168841002);
+   */ //int n = backcounter(' ',"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
     return 1;
 }
 
