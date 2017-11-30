@@ -59,7 +59,7 @@ int ref_lvl_counter(string path){
         }
     }
     return i;
-}/////////////  GET /social/profile/my?request_count=true HTTP/1.1
+}
 int head_lvl_counter(string path){
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==' '){
@@ -419,6 +419,9 @@ public:
 
     int insert(refnode*sub,short lvl,string path) {
         short final_lvl = ref_lvl_counter(path);
+        if(path ==""){
+            return 0;
+        }
         if (lvl==final_lvl){
             string data = get_ref_data(path,final_lvl);
             if (sub->child== nullptr) {
@@ -428,21 +431,21 @@ public:
                 sub->child->id=count;
                 return count;
 
-            } else{
+            }  else{
                 sub=sub->child;
                 while(sub->sibiling!= nullptr){
-                    if(sub->name==data){
-                        while(sub->child!= nullptr){
-                            sub=sub->child;
-                        }
-
+                    if(sub->name==data) {
+                        return sub->id;
                     }
+                    sub = sub->sibiling;
                 }
-
+                sub->sibiling = new refnode();
+                sub->sibiling->name=data;
+                count++;
+                sub->sibiling->id=count;
+                return count;
             }
             return sub->id;
-        }if(path==""){
-            return 0;
         }
         if (lvl==1){
             string data = get_ref_data(path,lvl);
@@ -789,13 +792,17 @@ public:
             } else{
                 sub=sub->child;
                 while(sub->sibiling!= nullptr){
-                    if(sub->name==data){
-                        while(sub->child!= nullptr){
-                            sub=sub->child;
-                        }
-
+                    if(sub->name==data) {
+                        return sub->id;
                     }
+                    sub = sub->sibiling;
                 }
+                sub->sibiling = new usernode();
+                sub->sibiling->name=data;
+                count++;
+                sub->sibiling->id=count;
+                return count;
+
 
             }
             return sub->id;
@@ -926,17 +933,21 @@ public:
                 sub->child->http=headhttp(path);
                 return count;
 
-            } else{
+            }  else{
                 sub=sub->child;
                 while(sub->sibiling!= nullptr){
-                    if(sub->data==data){
-                        while(sub->child!= nullptr){
-                            sub=sub->child;
-                        }
-
+                    if(sub->data==data) {
+                        return sub->id;
                     }
+                    sub = sub->sibiling;
                 }
-
+                sub->sibiling = new headNode();
+                sub->sibiling->data=data;
+                count++;
+                sub->sibiling->id=count;
+                sub->sibiling->method=head_method(path);
+                sub->sibiling->http=headhttp(path);
+                return count;
             }
             return sub->id;
         }if(path==""){
@@ -1011,6 +1022,75 @@ public:
 
 };
 ////////////////////////////////////////Parser/////////////////////////////
+void xmlparser1(string path){
+    fstream input;
+    input.open(path);
+    char c;
+    while (!input.eof()){
+        input>>c;
+        switch(c){
+            case '<':
+                char buffer[4096];
+                char w='s' ;
+                input>>w;
+
+                if (w=='L'){
+                    cout<<"Log:"<<'\n';
+                    input.seekp(2,ios::cur);
+                }
+                if (w=='H'){
+                    input>>w;
+                    if(w=='e'){
+                        cout << "Head:";
+                        input.seekp(3, ios::cur);
+                        input.get(buffer, 4096, '<');
+                        cout << buffer << '\n';
+                    }
+                    if(w=='o'){
+                        cout << "Host:";
+                        input.seekp(3, ios::cur);
+                        input.get(buffer, 4096, '<');
+                        cout << buffer << '\n';
+                    }
+                }
+                if (w=='T'){
+                    cout<<"Time:";
+                    input.seekp(5,ios::cur);
+                    input.get(buffer,4096,'<');
+                    cout<<buffer<<'\n';
+                }
+                if (w=='U'){
+                    cout<<"UserAgent:";
+                    input.seekp(9,ios::cur);
+                    input.get(buffer,4096,'<');
+                    cout<<buffer<<'\n';
+                }
+                if (w=='R'){
+                    input.seekp(1,ios::cur);
+                    input>>w;
+                    if(w=='f'){
+                        cout<<"Referer:";
+                        input.seekp(5,ios::cur);
+                        input.get(buffer,4096,'<');
+                        cout<<buffer<<'\n';
+                    } else if(w=='s'){
+                        cout<<"Response Code:";
+                        input.seekp(10,ios::cur);
+                        input.get(buffer,4096,'<');
+                        cout<<buffer<<'\n';
+                    }
+                    else if(w=='q'){ cout<<"RequestSize:";
+                        input.seekp(9,ios::cur);
+                        input.get(buffer,4096,'<');
+                        cout<<buffer<<'\n';
+                    }
+
+                }
+
+        }
+    }
+}
+
 void xmlparser(string path) {
      userlist *UserAgentList = new userlist();
      Iplist * HostList = new Iplist();
@@ -1028,17 +1108,21 @@ void xmlparser(string path) {
     fstream input;
     input.open(path);
     char c;
+    int cnt = 0;
     bool one = true;
     while (!input.eof()) {
         input >> c;
         switch (c) {
             case '<':
-                char buffer[20000];
-                char tag[20];
+                char buffer[2000000];
                 char w = '0';
                 input >> w;
                 if (w == 'L') {
                     if(!one) {
+                        if( requestsize=="3619760" and Head=="GET /fileuploader/71871 HTTP/1.1" ){
+                            cnt++;
+                            cout<<cnt;
+                        }
                         cout<<"LOG: \n";
                         cout << "head :" << Head << '\n';
                         cout << "useragent: " ;
@@ -1067,65 +1151,65 @@ void xmlparser(string path) {
                 if (w == 'H') {
                     input >> w;
                     if (w == 'e') {
-                        //cout << "Head:";
+                       // cout << "Head:";
                         input.ignore(3, '>');
                         //input.seekp(3, ios::cur);
-                        input.get(buffer, 2000, '<');
+                        input.get(buffer, 2000000, '<');
                         Head = buffer;
-                        //cout << buffer << '\n';
+                       // cout << buffer << '\n';
 
                     }
                     if (w == 'o') {
-                       /// cout << "Host:";
+                       // cout << "Host:";
                         input.ignore(4, '>');
                         //  input.seekp(3, ios::cur);
-                        input.get(buffer, 800, '<');
+                        input.get(buffer, 2000000, '<');
                         host = buffer;
-                        // cout << buffer << '\n';
+                         //cout << buffer << '\n';
 
                     }
                 }
                 if (w == 'T') {
-                    ///cout << "Time:";
+                    //cout << "Time:";
                     input.ignore(6, '>');
                     // input.seekp(5,ios::cur);
-                    input.get(buffer, 800, '<');
+                    input.get(buffer, 2000000, '<');
                     time = buffer;
                     //cout<<buffer<<'\n';
                 }
                 if (w == 'U') {
-                    ///cout << "UserAgent:";
+                    //cout << "UserAgent:";
                     input.ignore(10, '>');
                     //input.seekp(9,ios::cur);
-                    input.get(buffer, 2000, '<');
+                    input.get(buffer, 2000000, '<');
                     UserAgent = buffer;
-                    ///cout<<buffer<<'\n';
+                    //cout<<buffer<<'\n';
                 }
                 if (w == 'R') {
-                    //input.ignore(3, '>');
-                    input.seekp(1, ios::cur);
+                    input.ignore(3, '>');
+                    //input.seekp(1, ios::cur);
                     input >> w;
                     if (w == 'f') {
                         //cout << "Referer:";
                         input.ignore(6, '>');
                         // input.seekp(5,ios::cur);
-                        input.get(buffer, 2000, '<');
+                        input.get(buffer, 2000000, '<');
                         referer = buffer;
                         //cout<<buffer<<'\n';
                     } else if (w == 's') {
-                        //cout << "Response Code:";
+                        cout << "Response Code:";
                         input.ignore(11, '>');
 
                         //input.seekp(10,ios::cur);
-                        input.get(buffer, 2000, '<');
+                        input.get(buffer, 2000000, '<');
                         responsecode = buffer;
                         //cout<<buffer<<'\n';
                     } else if (w == 'q') {
-                       // cout << "RequestSize:";
+                       cout << "RequestSize:";
                         input.ignore(11, '>');
 
                         //input.seekp(9,ios::cur);
-                        input.get(buffer, 2000, '<');
+                        input.get(buffer, 2000000, '<');
                         requestsize = buffer;
                         //cout<<buffer<<'\n';
                     }
@@ -1678,9 +1762,9 @@ void xmlparser1(string path) {
     }
     */
   ///////////////////////  xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
-    /*
-    xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
-    Iplist *iplist = new Iplist();
+
+    xmlparser1("/home/alan/Documents/C++/DS_Project/out.xml");
+/*    Iplist *iplist = new Iplist();
     iplist->insert(55,iplist->root,1,192168008001);
     iplist->insert(77,iplist->root,1,192168008002);
     iplist->insert(84,iplist->root,1,193168008044);
@@ -1710,7 +1794,7 @@ void xmlparser1(string path) {
     khar->insert(55,khar->root,1,192168841002);
    */ //int n = backcounter(' ',"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
 
-    headlist * khar = new headlist;
+  /*  headlist * khar = new headlist;
     khar->insert(khar->root,1,"GET /mainpage/news?limit=10&offset=0&ssssss&SDASD=454 HTTP/1.1");
 
    /* for (int i=1 ; i<= head_max_lvl_counter("GET /mainpage/news?limit=10&offset=0&ssssss&SDASD=454 HTTP/1.1") ;i++){
