@@ -62,6 +62,69 @@ int ref_lvl_counter(string path){
         }
     }
     return i;
+}/////////////  GET /social/profile/my?request_count=true HTTP/1.1
+int head_lvl_counter(string path){
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==' '){
+            path = path.substr(j+1);
+            break;
+        }
+    }
+   short cnt = 0;
+    for (int i = 0; i <path.length() ; ++i) {
+        if(path[i]=='/'){
+            if(path[i+1]==' '){
+            } else {
+                cnt++;
+            }
+        }
+        if (path[i]==' '){
+            break;
+        }
+
+    }
+    return cnt;
+
+}
+int head_max_lvl_counter(string path){
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==' '){
+            path = path.substr(j+1);
+            break;
+        }
+    }
+    short cnt = 0;
+    for (int i = 0; i <path.length() ; ++i) {
+        if(path[i]=='/' or path[i]=='?' or path[i]=='&'){
+            if(path[i+1]==' '){
+            } else {
+                cnt++;
+            }
+        }
+        if (path[i]==' '){
+            break;
+        }
+
+    }
+    return cnt;
+}
+bool headhttp(string path){
+    if(path[path.length()-1]=='0'){
+        return true;
+    }
+    return false;
+}
+char head_method(string path){
+    if(path[0]=='P'){
+        if(path[1]=='O'){
+            return 'S';
+        }
+        if(path[1]=='U'){
+            return 'U';
+        }
+    } else{
+        return path[0];
+    }
 }
 string user_changer(string ss){
     for(char c:ss){
@@ -72,7 +135,41 @@ string user_changer(string ss){
     return ss;
 
 }
-string get_ref_data(string path,int m) {
+string get_head_data(string path,int m){
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==' '){
+            path = path.substr(j+1);
+            break;
+        }
+    }
+    path+='/';
+    string data;
+    int head = 0;
+    int last = 0;
+    for (int i = 0; i <path.length() ; ++i) {
+        if(m==1){
+            if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
+                head=i;
+            }
+        }
+        if(m==0){
+            if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
+                last=i;
+                break;
+            }
+        }
+        else{
+            if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
+                m--;
+            }
+        }
+
+    }
+    return path.substr(head+1,last-head-1);
+
+}
+
+string get_ref_data(string path,int m) {z
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==':'){
             path = path.substr(j+2);
@@ -269,6 +366,10 @@ union mydata{
     int ip;
     unsigned int array[6];
 };
+union headname{
+    string name;
+    int8_t ansid;
+};
 struct node{
     bool isleaf = false;
     bool islog = false;
@@ -297,6 +398,14 @@ struct usernode{
     usernode* child;
     usernode* sibiling;
 };//UserAgent
+struct headnode{
+    bool isleaf = false;
+    unsigned int id =0;
+    char method;
+    headname name;
+    headnode* child;
+    headnode* sibiling;
+};
 ////////////////////////////////////////Classes///////////////////////////////////////////
 class addressList{
     addressnode* root;
@@ -311,10 +420,32 @@ public:
     }
 
     int insert(refnode*sub,short lvl,string path) {
-        if(path==""){
+        short final_lvl = ref_lvl_counter(path);
+        if (lvl==final_lvl){
+            string data = get_ref_data(path,final_lvl);
+            if (sub->child== nullptr) {
+                sub->child = new refnode();
+                sub->child->name=data;
+                count++;
+                sub->child->id=count;
+                return count;
+
+            } else{
+                sub=sub->child;
+                while(sub->sibiling!= nullptr){
+                    if(sub->name==data){
+                        while(sub->child!= nullptr){
+                            sub=sub->child;
+                        }
+
+                    }
+                }
+
+            }
+            return sub->id;
+        }if(path==""){
             return 0;
         }
-        short final_lvl = ref_lvl_counter(path);
         if (lvl==1){
             string data = get_ref_data(path,lvl);
             if (sub->child == nullptr) {
@@ -345,29 +476,7 @@ public:
 
             }
         }
-        else if (lvl==final_lvl){
-            string data = get_ref_data(path,final_lvl);
-            if (sub->child== nullptr) {
-                sub->child = new refnode();
-                sub->child->name=data;
-                count++;
-                sub->child->id=count;
-                return count;
-
-            } else{
-                sub=sub->child;
-                while(sub->sibiling!= nullptr){
-                    if(sub->name==data){
-                        while(sub->child!= nullptr){
-                            sub=sub->child;
-                        }
-
-                    }
-                }
-
-            }
-            return sub->id;
-        } else {
+        else {
             string data = get_ref_data(path,lvl);
             if (sub->child == nullptr) {
                 sub->child = new refnode();
@@ -757,6 +866,110 @@ public:
 
 
     }
+};
+class headlist{
+public:
+    unsigned int count ;
+    /*headnode *root=new headnode();
+    headlist(){
+        count=0;
+
+    }
+
+    int insert(headnode*sub,short lvl,string path) {
+        short final_lvl = ref_lvl_counter(path);
+        if (lvl==final_lvl){
+            string data = get_head_data(path,final_lvl);
+            if (sub->child== nullptr) {
+                sub->child = new refnode();
+                sub->child->name=data;
+                count++;
+                sub->child->id=count;
+                return count;
+
+            } else{
+                sub=sub->child;
+                while(sub->sibiling!= nullptr){
+                    if(sub->name==data){
+                        while(sub->child!= nullptr){
+                            sub=sub->child;
+                        }
+
+                    }
+                }
+
+            }
+            return sub->id;
+        }if(path==""){
+            return 0;
+        }
+        if (lvl==1){
+            string data = get_ref_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new refnode();
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, path);
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new refnode();
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, path);
+                }
+
+            }
+        }
+        else {
+            string data = get_ref_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new refnode();
+                sub->child->name= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->name) {
+                    return insert(sub, lvl + 1, path);
+
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->name == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new refnode();
+                    sub->sibiling->name=data;
+                    return insert(sub->sibiling, lvl + 1, path);
+
+                }
+
+            }
+
+        }
+
+
+    }*/
+
 };
 
 
@@ -1433,7 +1646,7 @@ void xmlparser1(string path) {
         temp=temp->next;
     }
     */
-    xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
+  ///////////////////////  xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
     /*
     xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
     Iplist *iplist = new Iplist();
@@ -1465,7 +1678,12 @@ void xmlparser1(string path) {
     khar->insert(55,khar->root,1,192168011002);
     khar->insert(55,khar->root,1,192168841002);
    */ //int n = backcounter(' ',"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-    return 1;
+
+
+    for (int i=1 ; i<= head_max_lvl_counter("GET /mainpage/news?limit=10&offset=0 HTTP/1.1") ;i++){
+        cout<<get_head_data("GET /mainpage/news?limit=10&offset=0 HTTP/1.1",i)<<'\n' ;
+    }
+        return 1;
 }
 
 
