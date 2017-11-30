@@ -9,10 +9,7 @@
 #include <sstream>
 #include <bitset>
 #include <string>
-
-
 using namespace std;
-
 int16_t responsecode[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
 ////////////////////////////////////////////////////////usefull methods/////////////////////////////////////////////////////
 string getdata(string path,int m) {
@@ -168,8 +165,7 @@ string get_head_data(string path,int m){
     return path.substr(head+1,last-head-1);
 
 }
-
-string get_ref_data(string path,int m) {z
+string get_ref_data(string path,int m) {
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==':'){
             path = path.substr(j+2);
@@ -359,8 +355,6 @@ unsigned int convertor(string time){
 
 
 }
-
-
 ////////////// Structs//////////////////////////////
 union mydata{
     int ip;
@@ -369,6 +363,9 @@ union mydata{
 union headname{
     string name;
     int8_t ansid;
+    headname(){
+        name ="";
+    }
 };
 struct node{
     bool isleaf = false;
@@ -398,13 +395,14 @@ struct usernode{
     usernode* child;
     usernode* sibiling;
 };//UserAgent
-struct headnode{
-    bool isleaf = false;
+struct headNode{
+    bool http = false;
     unsigned int id =0;
-    char method;
-    headname name;
-    headnode* child;
-    headnode* sibiling;
+    bool isleaf = false;
+    char method = 'G';
+    headNode* child;
+    headNode* sibiling;
+    string data ;
 };
 ////////////////////////////////////////Classes///////////////////////////////////////////
 class addressList{
@@ -869,28 +867,69 @@ public:
 };
 class headlist{
 public:
-    unsigned int count ;
-    /*headnode *root=new headnode();
     headlist(){
         count=0;
-
     }
+    unsigned int count ;
+    headNode * root = new headNode();
 
-    int insert(headnode*sub,short lvl,string path) {
-        short final_lvl = ref_lvl_counter(path);
+    int insert(headNode*sub,short lvl,string path) {
+        short final_lvl = head_max_lvl_counter(path);
+        short leaf_lvl = head_lvl_counter(path);
+        if(lvl ==leaf_lvl ){
+            string data = get_head_data(path,lvl);
+            if (sub->child == nullptr) {
+                sub->child = new headNode();
+                sub->child->data= data;
+                return insert(sub->child, lvl + 1, path);
+
+            } else {
+                sub = sub->child;
+                if (data == sub->data) {
+                    return insert(sub, lvl + 1, path);
+
+                } else {
+                    while (sub != nullptr) {
+                        if (sub->data == data) {
+                            return insert(sub, lvl + 1, path);
+
+                        }
+                        if (sub->sibiling != nullptr) {
+                            sub = sub->sibiling;
+                        } else {
+                            break;
+                        }
+                    }
+                    sub->sibiling= new headNode();
+                    sub->sibiling->data=data;
+                    sub->sibiling->isleaf= true;
+
+                    return insert(sub->sibiling, lvl + 1, path);
+
+                }
+
+            }
+
+
+        }
+
+
+
         if (lvl==final_lvl){
             string data = get_head_data(path,final_lvl);
             if (sub->child== nullptr) {
-                sub->child = new refnode();
-                sub->child->name=data;
+                sub->child = new headNode();
+                sub->child->data=data;
                 count++;
                 sub->child->id=count;
+                sub->child->method=head_method(path);
+                sub->child->http=headhttp(path);
                 return count;
 
             } else{
                 sub=sub->child;
                 while(sub->sibiling!= nullptr){
-                    if(sub->name==data){
+                    if(sub->data==data){
                         while(sub->child!= nullptr){
                             sub=sub->child;
                         }
@@ -904,19 +943,19 @@ public:
             return 0;
         }
         if (lvl==1){
-            string data = get_ref_data(path,lvl);
+            string data = get_head_data(path,lvl);
             if (sub->child == nullptr) {
-                sub->child = new refnode();
-                sub->child->name= data;
+                sub->child = new headNode();
+                sub->child->data= data;
                 return insert(sub->child, lvl + 1, path);
 
             } else {
                 sub = sub->child;
-                if (data == sub->name) {
+                if (data == sub->data) {
                     return insert(sub, lvl + 1, path);
                 } else {
                     while (sub != nullptr) {
-                        if (sub->name == data) {
+                        if (sub->data == data) {
                             return insert(sub, lvl + 1, path);
 
                         }
@@ -926,28 +965,28 @@ public:
                             break;
                         }
                     }
-                    sub->sibiling= new refnode();
-                    sub->sibiling->name=data;
+                    sub->sibiling= new headNode();
+                    sub->sibiling->data=data;
                     return insert(sub->sibiling, lvl + 1, path);
                 }
 
             }
         }
         else {
-            string data = get_ref_data(path,lvl);
+            string data = get_head_data(path,lvl);
             if (sub->child == nullptr) {
-                sub->child = new refnode();
-                sub->child->name= data;
+                sub->child = new headNode();
+                sub->child->data= data;
                 return insert(sub->child, lvl + 1, path);
 
             } else {
                 sub = sub->child;
-                if (data == sub->name) {
+                if (data == sub->data) {
                     return insert(sub, lvl + 1, path);
 
                 } else {
                     while (sub != nullptr) {
-                        if (sub->name == data) {
+                        if (sub->data == data) {
                             return insert(sub, lvl + 1, path);
 
                         }
@@ -957,8 +996,8 @@ public:
                             break;
                         }
                     }
-                    sub->sibiling= new refnode();
-                    sub->sibiling->name=data;
+                    sub->sibiling= new headNode();
+                    sub->sibiling->data=data;
                     return insert(sub->sibiling, lvl + 1, path);
 
                 }
@@ -968,12 +1007,9 @@ public:
         }
 
 
-    }*/
+    }
 
 };
-
-
-
 ////////////////////////////////////////Parser/////////////////////////////
 void xmlparser(string path) {
      userlist *UserAgentList = new userlist();
@@ -1110,10 +1146,6 @@ void xmlparser(string path) {
     HostList->insert(convertor(time),HostList->root,1,str_to_ip(host));
 
 }
-
-
-
-
 /*
     holder * findnode(node* node1, short data , short lvl){
         node *root =node1->child;
@@ -1171,7 +1203,6 @@ void xmlparser(string path) {
 101000010010,011010001,0110100001000,11000101,101100,01101000011,2,0000000,1011011,0000010,01100010,11000100,01100011,2,011111,1100011,111000,0000011,2,1010101,0110100001010,2,2,111001,00011110,1101001,011011,001,1110111,010001,1010100,10100,01101000010011,0000001,111010,1110110,110101,1110,110000,0110000,01001,11001,10111,1101000,0110100001011,01101001,00011111,0110100000,1011010,0101,01110,2,11011,011110,00010,000110,010000,00001,011001,0001110,0110101,11111,100};
 
  */
-
 /*char chars[66]={'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V', 'W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r', 's','t','u','v','w','x','y','z','/','.','\t','1','2','3','4','5','6','7','8','9','0','?'};
 short coodes[66]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65};
 int counts[66] ={};
@@ -1679,10 +1710,12 @@ void xmlparser1(string path) {
     khar->insert(55,khar->root,1,192168841002);
    */ //int n = backcounter(' ',"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
 
+    headlist * khar = new headlist;
+    khar->insert(khar->root,1,"GET /mainpage/news?limit=10&offset=0&ssssss&SDASD=454 HTTP/1.1");
 
-    for (int i=1 ; i<= head_max_lvl_counter("GET /mainpage/news?limit=10&offset=0 HTTP/1.1") ;i++){
-        cout<<get_head_data("GET /mainpage/news?limit=10&offset=0 HTTP/1.1",i)<<'\n' ;
-    }
+   /* for (int i=1 ; i<= head_max_lvl_counter("GET /mainpage/news?limit=10&offset=0&ssssss&SDASD=454 HTTP/1.1") ;i++){
+        cout<<get_head_data("GET /mainpage/news?limit=10&offset=0&ssssss&SDASD=454 HTTP/1.1",i)<<'\n' ;
+    }*/
         return 1;
 }
 
