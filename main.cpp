@@ -11,17 +11,7 @@
 #include <string>
 using namespace std;
 int16_t responsecode[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
-struct TimeNode{
-    unsigned int time;
-    TimeNode * next;
-};
 
-
-struct DataHolder{
-    DataHolder* next;
-    int data[5];
-    TimeNode* time;
-};
 
 ////////////////////////////////////////////////////////usefull methods/////////////////////////////////////////////////////
 string getdata(string path,int m) {
@@ -373,47 +363,98 @@ string int_to_string(int a){
     string str = ss.str();
     return str;
 }
-bool equalholder(DataHolder *d1,unsigned int useragent,unsigned int head,unsigned int refrer,int8_t rescode,unsigned int reqsize){
-    unsigned  int array[5]={useragent,head,refrer,rescode,reqsize};
-    for (int i = 0; i <5 ; ++i) {
-        if(d1->data[i]!=array[i]){
-            return false;
-        }
-    }
-    return true;
-}
-void add_time(TimeNode * sub , unsigned int time){
-    while  (sub->next!= nullptr){
-        if(sub->time==time){
-            return;
-        }
-        sub = sub->next;
-    }
-    sub->next = new TimeNode();
-    sub->next->time=time;
 
-}
-void add_data(DataHolder * holder ,int useragent,int head,int refrer,int8_t rescode,unsigned int reqsize,unsigned int time){
-    while(holder->next!= nullptr){
-        if(equalholder(holder,useragent,head,refrer,rescode,reqsize)){
-           if(holder->time== nullptr){
-               holder->time=new TimeNode();
-               holder->time->time=time;
-           } else{
-               add_time(holder->time,time);
-           }
 
-        }
-        holder = holder->next;
-    }
-    holder->next=new DataHolder();
-    holder->data[0]=useragent;
-    holder->data[1]=head;
-    holder->data[2]=refrer;
-    holder->data[3]=rescode;
-    holder->data[4]=reqsize;
-}
+
 ////////////// Structs//////////////////////////////
+struct TimeNode{
+    unsigned int time;
+    TimeNode * next;
+};
+struct DataHolder{
+    DataHolder* next = nullptr;
+    int data[5];
+    TimeNode* time = nullptr;
+};
+class DataList{
+public:
+    DataHolder * holder;
+    DataList(){
+        holder=new DataHolder();
+    }
+    void add_data(int useragent,int head,int refrer,int8_t rescode,unsigned int reqsize,unsigned int time){
+        if(holder->time== nullptr){
+            holder->data[0]=useragent;
+            holder->data[1]=head;
+            holder->data[2]=refrer;
+            holder->data[3]=rescode;
+            holder->data[4]=reqsize;
+            holder->time = new TimeNode();
+            holder->time->time=time;
+        } else{
+            if(equalholder(holder,useragent,head,refrer,rescode,reqsize)){
+                if(holder->time== nullptr){
+                    holder->time=new TimeNode();
+                    holder->time->time=time;
+                } else{
+                    while  (holder->time->next!= nullptr){
+                        if(holder->time->time==time){
+                            return;
+                        }
+                        holder->time = holder->time->next;
+                    }
+                    if(holder->time->time==time){
+                        return;
+                    }
+                    holder->time->next = new TimeNode();
+                    holder->time->next->time=time;
+                    return;
+                }
+
+            }
+        while(holder->next!= nullptr){
+            if(equalholder(holder,useragent,head,refrer,rescode,reqsize)){
+                if(holder->time== nullptr){
+                    holder->time=new TimeNode();
+                    holder->time->time=time;
+                } else{
+                    while  (holder->time->next!= nullptr){
+                        if(holder->time->time==time){
+                            return;
+                        }
+                        holder->time = holder->time->next;
+                    }
+                    holder->time->next = new TimeNode();
+                    holder->time->next->time=time;
+
+                }
+                return;
+
+            }
+            holder = holder->next;
+        }
+
+        holder->next=new DataHolder();
+        holder->data[0]=useragent;
+        holder->data[1]=head;
+        holder->data[2]=refrer;
+        holder->data[3]=rescode;
+        holder->data[4]=reqsize;
+
+        }
+
+    }
+    bool equalholder(DataHolder *d1,unsigned int useragent,unsigned int head,unsigned int refrer, unsigned rescode,unsigned int reqsize){
+        unsigned  int array[5]={useragent,head,refrer,rescode,reqsize};
+        for (int i = 0; i <5 ; ++i) {
+            if(d1->data[i]!=array[i]){
+                return false;
+            }
+        }
+        return true;
+    }
+
+};
 struct headNode{
     bool http = false;
     unsigned int id =0;
@@ -423,10 +464,9 @@ struct headNode{
     headNode* sibiling;
     string data ;
 };
-
 union mydata{
     int ip;
-    DataHolder *dataHolder;
+    DataList *datalist;
 };
 union headname{
     string name;
@@ -463,6 +503,7 @@ struct usernode{
     usernode* child;
     usernode* sibiling;
 };//UserAgent
+
 
 ////////////////////////////////////////Classes///////////////////////////////////////////
 class addressList{
@@ -646,9 +687,9 @@ public:
                     sub = sub->child;
                 }
                 sub->child = new node();
-                sub->child->data.dataHolder= new DataHolder();
-                add_data(sub->child->data.dataHolder,useragent,head,refrer,rescode,reqsize,time);
-                sub->child->islog= true;
+
+                sub->child->data.datalist = new DataList();
+                sub->child->data.datalist->add_data(useragent,head,refrer,rescode,reqsize,time);
                 return;
 
             } else{
@@ -659,22 +700,25 @@ public:
                             sub = sub->child;
                         }
                         sub->child = new node();
-                        sub->child->data.dataHolder= new DataHolder();
-                        add_data(sub->child->data.dataHolder,useragent,head,refrer,rescode,reqsize,time);
-                        sub->child->islog= true;
+
+                        sub->child->data.datalist = new DataList();
+                        sub->child->data.datalist->add_data(useragent,head,refrer,rescode,reqsize,time);
                         return;
                     }
                     sub = sub->next;
                 }
                 if(sub->data.ip==data) {
-                    while (sub->child!= nullptr){
-                        sub = sub->child;
-                    }
+                    sub->child->data.datalist->add_data(useragent,head,refrer,rescode,reqsize,time);
+                    return;
 
                     sub->child = new node();
-                    sub->child->data.dataHolder= new DataHolder();
-                    add_data(sub->child->data.dataHolder,useragent,head,refrer,rescode,reqsize,time);
-                    sub->child->islog= true;                    return;
+
+                    sub->child->data.datalist = new DataList();
+                    sub->child->data.datalist->add_data(useragent,head,refrer,rescode,reqsize,time);
+                    return;
+                }
+                while (sub->next!= nullptr){
+                    sub = sub->next;
                 }
                 sub->next = new node();
                 sub->next->data.ip=data;
@@ -684,9 +728,9 @@ public:
                     sub = sub->child;
                 }
                 sub->child = new node();
-                sub->child->data.dataHolder= new DataHolder();
-                add_data(sub->child->data.dataHolder,useragent,head,refrer,rescode,reqsize,time);
-                sub->child->islog= true;
+
+                sub->child->data.datalist = new DataList();
+                sub->child->data.datalist->add_data(useragent,head,refrer,rescode,reqsize,time);
                 return;
             }
         }
@@ -1077,7 +1121,7 @@ void xmlparser(string path) {
                 input >> w;
                 if (w == 'L') {
                     if(!one) {
-                        cout<<"LOG: \n";
+                      /*  cout<<"LOG: \n";
                         cout << "head :" <<
                                          HeadList->insert(HeadList->root,1,Head.substr(0,Head.length()-8))
                                                << '\n';
@@ -1090,7 +1134,7 @@ void xmlparser(string path) {
                         cout << "rq size: " << requestsize << '\n';
                         cout << "res code: " <<
                         get_code_index(str_to_int(responsecode))<< '\n';
-                       cout << "time : " <<convertor(time)<< '\n';
+                       cout << "time : " <<convertor(time)<< '\n';*/
                         cout << "host : " << host << '\n';
                         HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent)
                                 ,HeadList->insert(HeadList->root,1,Head)
@@ -1125,7 +1169,7 @@ void xmlparser(string path) {
                         //  input.seekp(3, ios::cur);
                         input.get(buffer, 2000000, '>');
                         host = buffer;
-                        host = host.substr(0,host.length()-7);
+                        host = host.substr(0,host.length()-6);
                          //cout << buffer << '\n';
 
                     }
@@ -1350,499 +1394,25 @@ void get_ip(string ip , node* sub,short lvl){
         }
     }*/
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-//long int codes[66]={1010111,2,1010110,01
-//
-//
-//
-101000010010,011010001,0110100001000,11000101,101100,01101000011,2,0000000,1011011,0000010,01100010,11000100,01100011,2,011111,1100011,111000,0000011,2,1010101,0110100001010,2,2,111001,00011110,1101001,011011,001,1110111,010001,1010100,10100,01101000010011,0000001,111010,1110110,110101,1110,110000,0110000,01001,11001,10111,1101000,0110100001011,01101001,00011111,0110100000,1011010,0101,01110,2,11011,011110,00010,000110,010000,00001,011001,0001110,0110101,11111,100};
 
- */
-/*char chars[66]={'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V', 'W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r', 's','t','u','v','w','x','y','z','/','.','\t','1','2','3','4','5','6','7','8','9','0','?'};
-short coodes[66]={0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65};
-int counts[66] ={};
-/*int findLenght(string str){
-    string keys[27] = {"Mozilla/", "Windows/", "NT/", "Win64/", "AppleWebKit/", "KHTML/", "like/", "Gecko/", "Chrome/", "Safari/", "x64/",
-                       ".", "(", ")", ",", ";", "0", "1", "2","3","4","5","6","7","8","9"," "};
-    int i = 0;
-    int counter = 0;
-    while (i < str.length()) {
-        if (str[i] == 'M' && str[i + 1] == 'o' && str[i + 2] == 'z' && str[i + 3] == 'i') {
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'W' && str[i + 1] == 'i' && str[i + 3] == 'd') {
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'N' && str[i + 1] == 'T') {
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'W' && str[i + 1] == 'i' && str[i + 2] == 'n' && str[i + 3] == '6') {
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'A' && str[i + 1] == 'p' && str[i + 2] == 'p' && str[i + 3] == 'l' && str[i + 4] == 'e' &&
-                 str[i + 5] == 'W' && str[i + 6] == 'e') {
-            counter++;
-            i += 12;
-        }
-        else if (str[i] == 'K' && str[i + 1] == 'H' && str[i + 2] == 'T' && str[i + 3] == 'M') {
-            counter++;
-            i += 6;
-        }
-        else if (str[i] == 'l' && str[i + 1] == 'i' && str[i + 2] == 'k' && str[i + 3] == 'e') {
-            counter++;
-            i += 5;
-        }
-        else if (str[i] == 'G' && str[i + 1] == 'e' && str[i + 2] == 'c' && str[i + 3] == 'k') {
-            counter++;
-            i += 6;
-        }
-        else if (str[i] == 'C' && str[i + 1] == 'h' && str[i + 2] == 'r' && str[i + 3] == 'o') {
-            counter++;
-            i += 7;
-        }
-        else if (str[i] == 'S' && str[i + 1] == 'a' && str[i + 2] == 'f' && str[i + 3] == 'a') {
-            counter++;
-            i += 7;
-        }
-        else if (str[i] == 'x' && str[i + 1] == '6' && str[i + 2] == '4') {
-            counter++;
-            i += 4;
-        }
-        else if (str[i] == '.') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '(') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == ')') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == ',') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == ';') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '0') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '1') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '2') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '3') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '4') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '5') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '6') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '7') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '8') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == '9') {
-            counter++;
-            i++;
-        }
-        else if (str[i] == ' ') {
-            counter++;
-            i++;
-        }
-        else {
-            counter++;
-            i++;
-        }
-    }
-    return counter;
-
-}
-void userToCode(string str , bitset<6> result[]) {
-    string keys[27] = {"Mozilla/", "Windows/", "NT/", "Win64/", "AppleWebKit/", "KHTML/", "like/", "Gecko/", "Chrome/", "Safari/", "x64/",
-                       ".", "(", ")", ",", ";", "0", "1", "2","3","4","5","6","7","8","9"," "};
-    int b[27]={128,129,130,131,132,133,134,135,136,137,138,46,40,41,44,59,48,49,50,51,52,53,54,55,56,57,32};
-    int i = 0;
-    int counter = 0 ;
-    while (i < str.length()) {
-        if (str[i] == 'M' && str[i + 1] == 'o' && str[i + 2] == 'z' && str[i + 3] == 'i') {
-            bitset<6> a(b[0] - 127);
-            result[counter] = a;
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'W' && str[i + 1] == 'i' && str[i + 3] == 'd') {
-            bitset<6> a(b[1] - 127);
-            result[counter] = a;
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'N' && str[i + 1] == 'T') {
-            bitset<6> a(b[2] - 127);
-            result[counter] = a;
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'W' && str[i + 1] == 'i' && str[i + 2] == 'n' && str[i + 3] == '6') {
-            bitset<6> a(b[3] - 127);
-            result[counter] = a;
-            counter++;
-            i += 8;
-        }
-        else if (str[i] == 'A' && str[i + 1] == 'p' && str[i + 2] == 'p' && str[i + 3] == 'l' && str[i + 4] == 'e' &&
-                 str[i + 5] == 'W' && str[i + 6] == 'e') {
-            bitset<6> a(b[4] - 127);
-            result[counter] = a;
-            counter++;
-            i += 12;
-        }
-        else if (str[i] == 'K' && str[i + 1] == 'H' && str[i + 2] == 'T' && str[i + 3] == 'M') {
-            bitset<6> a(b[5] - 127);
-            result[counter] = a;
-            counter++;
-            i += 6;
-        }
-        else if (str[i] == 'l' && str[i + 1] == 'i' && str[i + 2] == 'k' && str[i + 3] == 'e') {
-            bitset<6> a(b[6] - 127);
-            result[counter] = a;
-            counter++;
-            i += 5;
-        }
-        else if (str[i] == 'G' && str[i + 1] == 'e' && str[i + 2] == 'c' && str[i + 3] == 'k') {
-            bitset<6> a(b[7] - 127);
-            result[counter] = a;
-            counter++;
-            i += 6;
-        }
-        else if (str[i] == 'C' && str[i + 1] == 'h' && str[i + 2] == 'r' && str[i + 3] == 'o') {
-            bitset<6> a(b[8] - 127);
-            result[counter] = a;
-            counter++;
-            i += 7;
-        }
-        else if (str[i] == 'S' && str[i + 1] == 'a' && str[i + 2] == 'f' && str[i + 3] == 'a') {
-            bitset<6> a(b[9] - 127);
-            result[counter] = a;
-            counter++;
-            i += 7;
-        }
-        else if (str[i] == 'x' && str[i + 1] == '6' && str[i + 2] == '4') {
-            bitset<6> a(b[10] - 127);
-            result[counter] = a;
-            counter++;
-            i += 4;
-        }
-        else if (str[i] == '.') {
-            bitset<6> a(b[11]);
-            result[counter] = a;
-            counter++;
-            i++;
-
-        }
-        else if (str[i] == '(') {
-            bitset<6> a(b[12]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == ')') {
-            bitset<6> a(b[13]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == ',') {
-            bitset<6> a(b[14]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == ';') {
-            bitset<6> a(b[15]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '0') {
-            bitset<6> a(b[16]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '1') {
-            bitset<6> a(b[17]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '2') {
-            bitset<6> a(b[18]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '3') {
-            bitset<6> a(b[19]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '4') {
-            bitset<6> a(b[20]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '5') {
-            bitset<6> a(b[21]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '6') {
-            bitset<6> a(b[22]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '7') {
-            bitset<6> a(b[23]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '8') {
-            bitset<6> a(b[24]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == '9') {
-            bitset<6> a(b[25]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else if (str[i] == ' ') {
-            bitset<6> a(b[26]);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-        else {
-            bitset<6> a(0);
-            result[counter] = a;
-            counter++;
-            i++;
-        }
-    }
-}
-void encoder (bitset<6> codes[],unsigned int encodedHead[],int len){
-    int flag=len%6 ;
-    if(flag ==0 ) {
-        int counter1 =0 ;
-        for (int i = 0; i < len / 6; i++) {
-            string res;
-            for (int j = i*6;j< (i + 1) * 6; j++) {
-                res += codes[j].to_string();
-            }
-            bitset<48> ress(res);
-            unsigned int resultt = ress.to_ulong();
-            encodedHead[counter1]=(resultt);
-            counter1 ++ ;
-        }
-    }
-    else {
-        int counter2 =0 ;
-        //     cout << "im here" <<'\n' ;
-        string string1;
-        for (int i = 0 ; i < flag ; i++){
-            //        cout << "done" <<'\n' ;
-            string1 += codes[i].to_string();
-        }
-        bitset<16> ress(string1);
-        unsigned int resultt = ress.to_ulong();
-        //     cout << resultt <<'\n';
-        encodedHead[counter2]=resultt;
-        counter2++;
-        //     cout <<"now here" <<'\n' ;
-        for(int i = 0 ;i < len/6 ; i++ ){
-            int counter = 0 ;
-            string res ;
-            for (int j = i*6+(flag);j < (i+1)*6 + flag;j++ ){
-                //cout << "got here"<<j<<" "<<counter <<'\n';
-                res += codes[j].to_string();
-                counter++;
-            }
-            bitset<48> ress(res);
-            unsigned int resultt=ress.to_ulong();
-            //    cout<<ress<< " : "<<resultt<<'\n';
-            encodedHead[counter2]=resultt;
-            counter2 ++ ;
-        }
-    }
-}
-void xmlparser1(string path) {
-    fstream input;
-    input.open(path);
-    char c;
-    while (!input.eof()) {
-        input >> c;
-        switch (c) {
-            case '<':
-                char buffer[800];
-                char w = 's';
-                input >> w;
-
-                if (w == 'L') {
-                    //     cout<<"Log:"<<'\n';
-                    input.seekp(2, ios::cur);
-                }
-                if (w == 'H') {
-                    input >> w;
-                    if (w == 'e') {
-
-                        //     cout << "Head:";
-                        input.seekp(3, ios::cur);
-                        input.get(buffer, 100, '<');
-                        string head = buffer;
-                        bitset<6> headCode[head.length()];
-                        int count = head.length() / 6;
-                        if (head.length() % 6 != 0)count++;
-                        int i = 0;
-                        for (char c :head) {
-                            bitset<6> code(c);
-                            //  cout << code <<'\n';
-                            headCode[i] = code;
-                            i++;
-                        };
-                        // IN MISHE ARRAYE NAHAIIE HEAD
-                        unsigned int encodedHead[count];
-                        encoder(headCode, encodedHead, head.length());
-
-                    }
-                    if (w == 'o') {
-                        //       cout << "Host:";
-                        input.seekp(3, ios::cur);
-                        input.get(buffer, 100, '<');
-                        //         cout << buffer << '\n';
-                    }
-                }
-                if (w == 'T') {
-                    //        cout<<"Time:";
-                    input.seekp(5, ios::cur);
-                    input.get(buffer, 100, '<');
-                    //        cout<<buffer<<'\n';
-                }
-                if (w == 'U') {
-                    //       cout<<"UserAgent:";
-                    input.seekp(9, ios::cur);
-                    input.get(buffer, 150, '<');
-                    string user = buffer;
-                    int len = findLenght(user);
-                    int count = len / 6;
-                    if (len % 6 != 0)count++;
-                    bitset<6> codedUser[len];
-                    userToCode(buffer, codedUser);
-                    // IN MISHE ARRAYE NAHAIIE USER
-                    unsigned int encodedUser[count];
-                    encoder(codedUser, encodedUser, len);
-
-                    if (w == 'R') {
-                        input.seekp(1, ios::cur);
-                        input >> w;
-                        if (w == 'f') {
-                            //   cout<<"Referer:";
-                            input.seekp(5, ios::cur);
-                            input.get(buffer, 100, '<');
-                            string referer = buffer;
-                            bitset<6> refererCode[referer.length()];
-                            int count = referer.length() / 6;
-                            if (referer.length() % 6 != 0)count++;
-                            int i = 0;
-                            for (char c :referer) {
-                                bitset<6> code(c);
-                                refererCode[i] = code;
-                                i++;
-                            };
-                            // IN MISHE ARRAYE NAHAIIE REFERER
-                            unsigned int encodedReferer[count];
-                            encoder(refererCode, encodedReferer, referer.length());
-
-                        } else if (w == 's') {
-                            //         cout<<"Response Code:";
-                            input.seekp(10, ios::cur);
-                            input.get(buffer, 100, '<');
-                            //         cout<<buffer<<'\n';
-                        } else if (w == 'q') {
-                            //         cout<<"RequestSize:";
-                            input.seekp(9, ios::cur);
-                            input.get(buffer, 400, '<');
-                            //         cout<<buffer<<'\n';
-                        }
-
-                    }
-
-                }
-        }
-    }
-}
-*/
  int main() {
-  /*  namelist  *list = new namelist;
-    cout<<list->insert("a")<<'\n';
-    cout<<list->insert("a")<<'\n';
-    cout<<list->insert("b")<<'\n';
-    cout<<list->insert("c")<<'\n';
-    cout<<list->insert("a")<<'\n';
-    cout<<list->insert("alan")<<'\n';
-    cout<<list->insert("documents")<<'\n';
-    cout<<list->insert("home")<<'\n';
-    cout<<list->insert("Documents")<<'\n';
-    cout<<list->insert("slam")<<'\n';
-    namenode *temp = list->root;
-    while (temp){
-        cout<<temp->name<<'\n';
-        temp=temp->next;
-    }
-    */
-    //xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
 
+    xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
+    cout<<"namste";
+    while(true){
+
+    }
  //   xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
 
     //cout<<getthree(192168001001,0);
-    Iplist *iplist = new Iplist();
+  /*  Iplist *iplist = new Iplist();
+    iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
+    iplist->insert(1,2,3,4,5,7,iplist->root,1,192168008001);
     iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
     iplist->insert(77,66,4,4,6,4,iplist->root,1,192168008002);
     iplist->insert(84,44,55,6,2,1,iplist->root,1,192168008002);
     iplist->insert(85,61,61,25,9,5,iplist->root,1,191168009002);
-    iplist->insert(87,88,52,43,26,256,iplist->root,1,192168009003);
+    iplist->insert(87,88,52,43,26,256,iplist->root,1,192168009003);*/
     ///gotoleafs(55,"",iplist->root);
     //iplist->insert(93,iplist->root,1,193168058002);
     //iplist->insert(84,iplist->root,1,193165008002);
@@ -1875,10 +1445,7 @@ void xmlparser1(string path) {
     khar->insert(khar->root,1,"GET /mainpage/news?limait=10&offset=0&ssssss&SDASD=454 HTTP/1.0");
     khar->insert(khar->root,1,"GET /mainpage/news?limdit=10&offset=0&sssssddds&SDASD=454 HTTP/1.1");
     cout<<getreq(2,"",khar->root);*/
-    cout<<"DONE";
-    while (true){
 
-    }
 
 
         return 1;
