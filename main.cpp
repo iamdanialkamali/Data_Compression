@@ -10,7 +10,7 @@
 #include <bitset>
 #include <string>
 using namespace std;
-int16_t responsecode[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
+int16_t responsecodes[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
 
 
 ////////////////////////////////////////////////////////usefull methods/////////////////////////////////////////////////////
@@ -47,6 +47,9 @@ string ref_slash(string path){
     return path;
 }
 int ref_lvl_counter(string path){
+    if(path==""){
+        return 0;
+    }
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==':'){
             path = path.substr(j+2);
@@ -268,7 +271,7 @@ long getthree(unsigned long data,int i){
 }
 int get_code_index(int a){
     for (int i = 0; i <65 ; ++i) {
-        if(responsecode[i]==a){
+        if(responsecodes[i]==a){
             return  i;
 
         }
@@ -383,6 +386,7 @@ public:
         holder=new DataHolder();
     }
     void add_data(int useragent,int head,int refrer,int8_t rescode,unsigned int reqsize,unsigned int time){
+        TimeNode * timeNode ;
         if(holder->time== nullptr){
             holder->data[0]=useragent;
             holder->data[1]=head;
@@ -397,35 +401,39 @@ public:
                     holder->time=new TimeNode();
                     holder->time->time=time;
                 } else{
-                    while  (holder->time->next!= nullptr){
-                        if(holder->time->time==time){
-                            return;
-                        }
-                        holder->time = holder->time->next;
-                    }
                     if(holder->time->time==time){
                         return;
                     }
-                    holder->time->next = new TimeNode();
-                    holder->time->next->time=time;
+                    timeNode = holder->time;
+                    while  (timeNode->next!= nullptr){
+                        if(timeNode->time==time){
+                            return;
+                        }
+                        timeNode = timeNode->next;
+                    }
+                    if(timeNode->time==time){
+                        return;
+                    }
+                    timeNode->next = new TimeNode();
+                    timeNode->next->time=time;
                     return;
                 }
-
             }
         while(holder->next!= nullptr){
             if(equalholder(holder,useragent,head,refrer,rescode,reqsize)){
                 if(holder->time== nullptr){
                     holder->time=new TimeNode();
                     holder->time->time=time;
+                    timeNode = holder->time;
                 } else{
-                    while  (holder->time->next!= nullptr){
-                        if(holder->time->time==time){
+                    while  (timeNode->next!= nullptr){
+                        if(timeNode->time==time){
                             return;
                         }
-                        holder->time = holder->time->next;
+                        timeNode = timeNode->next;
                     }
-                    holder->time->next = new TimeNode();
-                    holder->time->next->time=time;
+                    timeNode->next = new TimeNode();
+                    timeNode->next->time=time;
 
                 }
                 return;
@@ -433,18 +441,16 @@ public:
             }
             holder = holder->next;
         }
-
         holder->next=new DataHolder();
         holder->data[0]=useragent;
         holder->data[1]=head;
         holder->data[2]=refrer;
         holder->data[3]=rescode;
         holder->data[4]=reqsize;
-
         }
 
     }
-    bool equalholder(DataHolder *d1,unsigned int useragent,unsigned int head,unsigned int refrer, unsigned rescode,unsigned int reqsize){
+    bool equalholder(DataHolder *d1,unsigned int useragent,unsigned int head,unsigned int refrer, int8_t rescode,unsigned int reqsize){
         unsigned  int array[5]={useragent,head,refrer,rescode,reqsize};
         for (int i = 0; i <5 ; ++i) {
             if(d1->data[i]!=array[i]){
@@ -503,8 +509,6 @@ struct usernode{
     usernode* child;
     usernode* sibiling;
 };//UserAgent
-
-
 ////////////////////////////////////////Classes///////////////////////////////////////////
 class addressList{
     addressnode* root;
@@ -520,9 +524,6 @@ public:
 
     int insert(refnode*sub,short lvl,string path) {
         short final_lvl = ref_lvl_counter(path);
-        if(path ==""){
-            return 0;
-        }
         if (lvl==final_lvl){
             string data = get_ref_data(path,final_lvl);
             if (sub->child== nullptr) {
@@ -547,6 +548,9 @@ public:
                 return count;
             }
             return sub->id;
+        }
+        if(final_lvl==0){
+            return 0;
         }
         if (lvl==1){
             string data = get_ref_data(path,lvl);
@@ -1096,8 +1100,6 @@ void xmlparser(string path) {
      userlist *UserAgentList = new userlist();
      Iplist * HostList = new Iplist();
      reflist * RefererList = new reflist();
-     namelist * NameList = new namelist();
-     addressList * AddressList = new addressList();
      headlist *HeadList = new headlist();
 
     string Head;
@@ -1116,7 +1118,7 @@ void xmlparser(string path) {
         input >> c;
         switch (c) {
             case '<':
-                char buffer[2000000];
+                char buffer[2000];
                 char w = '0';
                 input >> w;
                 if (w == 'L') {
@@ -1128,14 +1130,15 @@ void xmlparser(string path) {
                         cout << "useragent: " ;
                        cout<<
                             UserAgentList->insert(UserAgentList->root, 1, UserAgent)
-                                    << '\n';
-                        cout << "referer: " <<
-                         RefererList->insert(RefererList->root, 1, referer)<< '\n';
-                        cout << "rq size: " << requestsize << '\n';
-                        cout << "res code: " <<
-                        get_code_index(str_to_int(responsecode))<< '\n';
-                       cout << "time : " <<convertor(time)<< '\n';*/
-                        cout << "host : " << host << '\n';
+                                    << '\n';*/
+                        /*cout << "referer: " <<  referer<<'\n'<<
+                         RefererList->insert(RefererList->root,1, referer)<< '\n';
+                        cout << "rq size: " << requestsize << '\n';*/
+                        //cout << "res code: " <<responsecode<<'\n';
+                        //get_code_index(str_to_int(responsecode))<< '\n';
+                        /*
+                       cout << "time : " <<convertor(time)<< '\n';
+                        cout << "host : " << host << '\n';*/
                         HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent)
                                 ,HeadList->insert(HeadList->root,1,Head)
                                 ,RefererList->insert(RefererList->root, 1, referer)
@@ -1158,19 +1161,20 @@ void xmlparser(string path) {
                     input >> w;
                     if (w == 'e') {
                         input.ignore(3, '>');
-                        input.get(buffer, 2000000, '>');
+                        input.get(buffer, 2000, '>');
                         Head = buffer;
-                        Head = Head.substr(0,Head.length()-7);
+                        Head = Head.substr(0,Head.length()-6);
+                        //cout<<Head<<'\n';
 
                     }
                     if (w == 'o') {
-                       // cout << "Host:";
+                        //cout << "Host:";
                         input.ignore(4, '>');
                         //  input.seekp(3, ios::cur);
-                        input.get(buffer, 2000000, '>');
+                        input.get(buffer, 2000, '>');
                         host = buffer;
                         host = host.substr(0,host.length()-6);
-                         //cout << buffer << '\n';
+                        // cout << host << '\n';
 
                     }
                 }
@@ -1178,111 +1182,81 @@ void xmlparser(string path) {
                     //cout << "Time:";
                     input.ignore(6, '>');
                     // input.seekp(5,ios::cur);
-                    input.get(buffer, 2000000, '>');
+                    input.get(buffer, 2000, '>');
                     time = buffer;
-                    time = time.substr(0,time.length()-7);
-                    //cout<<buffer<<'\n';
+                    time = time.substr(0,time.length()-6);
+                    //cout<<time<<'\n';
                 }
                 if (w == 'U') {
-                    //cout << "UserAgent:";
+                   // cout << "UserAgent:";
                     input.ignore(10, '>');
                     //input.seekp(9,ios::cur);
-                    input.get(buffer, 2000000, '>');
+                    input.get(buffer, 2000, '>');
                     UserAgent = buffer;
                     UserAgent=UserAgent.substr(0,UserAgent.length()-11);
-                    //cout<<buffer<<'\n';
+                   // cout<<UserAgent<<'\n';
                 }
                 if (w == 'R') {
-                    input.ignore(3, '>');
-                    //input.seekp(1, ios::cur);
+                    //input.ignore(3, '>');
+                    input.seekp(1, ios::cur);
                     input >> w;
                     if (w == 'f') {
-                        //cout << "Referer:";
+                       // cout << "Referer:";
                         input.ignore(6, '>');
                         // input.seekp(5,ios::cur);
-                        input.get(buffer, 2000000, '>');
+                        input.get(buffer, 2000, '>');
                         referer = buffer;
-                        referer=referer.substr(0,referer.length()-10);
-                        //cout<<buffer<<'\n';
+                        referer=referer.substr(0,referer.length()-9);
+                      //  cout<<referer<<'\n';
                     } else if (w == 's') {
-                        cout << "Response Code:";
+                       // cout << "Response Code:";
                         input.ignore(11, '>');
 
                         //input.seekp(10,ios::cur);
-                        input.get(buffer, 2000000, '>');
+                        input.get(buffer, 2000, '>');
                         responsecode = buffer;
-                        responsecode=responsecode.substr(0,responsecode.length()-15);
+                        responsecode=responsecode.substr(0,responsecode.length()-14);
                         //cout<<buffer<<'\n';
                     } else if (w == 'q') {
-                       cout << "RequestSize:";
+                      // cout << "RequestSize:";
                         input.ignore(11, '>');
 
                         //input.seekp(9,ios::cur);
-                        input.get(buffer, 2000000, '>');
+                        input.get(buffer, 2000, '>');
                         requestsize = buffer;
-                        requestsize=requestsize.substr(0,requestsize.length()-15);
-                        //cout<<buffer<<'\n';
+                        requestsize=requestsize.substr(0,requestsize.length()-13);
+                        //cout<<requestsize<<'\n';
                     }
-
                 }
-
         }
-
-
     }
-    cout << "head :" << HeadList->insert(HeadList->root,1,Head) << '\n';
+/*    cout << "head :" << HeadList->insert(HeadList->root,1,Head) << '\n';
     cout << "useragent: " << UserAgentList->insert(UserAgentList->root,1,UserAgent) << '\n';
     cout << "referer: " << RefererList->insert(RefererList->root,1,referer) << '\n';
     cout << "rq size: " << requestsize << '\n';
     cout << "res code: " << get_code_index( str_to_int(responsecode))  << '\n';
     cout << "time : " << convertor(time) << '\n';
-    cout << "host : " << host << '\n';
+    cout << "host : " << host << '\n';*/
     HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent)
             ,HeadList->insert(HeadList->root,1,Head)
             ,RefererList->insert(RefererList->root, 1, referer)
             , get_code_index(str_to_int(responsecode))
             ,str_to_int(requestsize),
                      convertor(time), HostList->root, 1, str_to_ip(host));
-
 }
 ///////////////////////////////////Phase2//////////////////////////////////////////////////////////////////
-/*
-void gotoleafs(int id,string ss , node* sub){
-    string temp ="";
-    while (!sub->islog){
-        if(sub->child== nullptr){
-            delete sub->child;
-        }
-        if(sub->next== nullptr){
-            delete sub->child;
-        }
-        if(sub->isleaf){
-            temp = temp + ss+int_to_string(sub->data.ip);
-        } else {
-            temp = temp + ss + int_to_string(sub->data.ip) + ".";
-        }
-            if(sub->next!= nullptr) {
-            gotoleafs(id,temp , sub->next);
+string get_ip_leaf(string before,string req , node* sub){
+    string temp = before;
+    while (sub->next!= nullptr){
 
-        }
-
-    sub = sub->child;
     }
-    if(sub->islog){
-     //   cout<<sub->data.ip<<'\n';
-
-        while (sub!= nullptr){
-
-            if(id == sub->data.){
-                cout<<temp.substr(2)<<'\n';
-            }
-            sub=sub->child;
-        }
+    if(sub->isleaf){
+        cout<<before<<'\n';
     }
 
 }
 void requestURL(string requrl , headlist*sub,node*sub1){
-    gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
+   // gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
 }
 string getreq(int id , string ss, headNode * sub){
     string temp ="";
@@ -1316,104 +1290,95 @@ string getreq(int id , string ss, headNode * sub){
         } else return "";
     }
 }
-void get_ip(string ip , node* sub,short lvl){
+node* get_ip(string ip , node* sub,short lvl){
     while (sub!=nullptr) {
-        if(sub->data.ip==getthree(str_to_ip(ip),lvl)){
-            get_ip(ip,sub,lvl+1);
-            return;
+        int temp = getthree(str_to_ip(ip),lvl);
+        if (sub->isleaf){
+            //cout<<sub->child->data.datalist->holder->time->time;
+            return sub;
+        }
+        if(sub->data.ip==temp){
+            return get_ip(ip,sub->child,lvl+1);
         }
         if (sub->isleaf){
-            while (sub!= nullptr){
-               // getreq(sub->data.array[0]);
-                sub=sub->child;
-            }
+            /*while (sub!= nullptr){
+            }*/
+            cout<<sub->data.ip;
         }
 
     sub = sub->next;
     }
 
 }
-
-
-*/
-
-
-
-
-
-
-
-
-
-/*
-    holder * findnode(node* node1, short data , short lvl){
-        node *root =node1->child;
-        if(root== nullptr){
-            node* newnode   =new node();
-            newnode->data=data;
-            node1->child=newnode;
-            return newnode;
-        }
-        else{
-            while (root->next!= nullptr) {
-                if (root->data == data){
-                    return root;
-                }
-                root=root->next;
-            }if(lvl==3){
-                holder *holder1 = new holder ;
-                holder1->data = data;
-                root->child = holder1;
-                time_node * time_node1= new time_node;
-                time_node1->time=500;
-                holder1->time=time_node1;
-                return holder1;
-            }
-            else {
-
-                node *newnode = new node();
-                newnode->data = data;
-                root->next = newnode;
-                return newnode;
-            }
-        }
+int count(TimeNode* timeNode){
+    if(timeNode== nullptr){
+        return 0;
+    } else{
+        return count(timeNode->next)+1;
     }
-    void insert(long key, node *node1){
-        for (int i = 0; i <4 ; ++i) {
-            node *root=findnode(node1,getthree(key,i),i);
+}
+
+///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
+int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
+    int cnt1 = 0;
+    int cnt2 = 0;
+    int rescode = get_code_index(responseCode);
+    int id =url;
+    //ref->insert(ref->root,1,url);
+    node * node1 = get_ip(ip , sub,0)->child;
+    DataHolder* datanode = node1->data.datalist->holder;
+    while (datanode!= nullptr){
+        int tempid  = datanode->data[3];
+        if(id==tempid){
+            int temp = datanode->data[1];
+           if( rescode==temp){
+               cnt1 += 1*count(datanode->time);
+               cnt2+= 1*count(datanode->time);
+           } else{
+               cnt2+= 1*count(datanode->time);
+           }
+
         }
+        datanode=datanode->next;
+
     }
-    void print(){
-        node* temp = root;
-        while(temp->child!= nullptr){
-            while (temp->next!= nullptr){
-                cout<<temp->data<<'\n';
-                temp=temp->next;
-            }
-            temp = temp->child;
-        }
-    }*/
+    cnt1=cnt1*100;
+    return(cnt1/cnt2);
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
  int main() {
 
-    xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
-    cout<<"namste";
-    while(true){
+        xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
+        //cout<<"End"<<'\n';
 
-    }
+        //while(true){
+
+        //}
  //   xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
+   /* DataList* dataList = new DataList();
+     dataList->add_data(1,2,3,4,5,6);
+     dataList->add_data(1,2,3,4,5,7);
+     dataList->add_data(1,2,3,4,5,8);
+     dataList->add_data(1,2,3,4,5,9);
+     dataList->add_data(1,2,3,4,5,10);
+
 
     //cout<<getthree(192168001001,0);
-  /*  Iplist *iplist = new Iplist();
-    iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
-    iplist->insert(1,2,3,4,5,7,iplist->root,1,192168008001);
-    iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
-    iplist->insert(77,66,4,4,6,4,iplist->root,1,192168008002);
-    iplist->insert(84,44,55,6,2,1,iplist->root,1,192168008002);
-    iplist->insert(85,61,61,25,9,5,iplist->root,1,191168009002);
-    iplist->insert(87,88,52,43,26,256,iplist->root,1,192168009003);*/
-    ///gotoleafs(55,"",iplist->root);
+     Iplist *iplist = new Iplist();
+     iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
+     iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
+     iplist->insert(1,2,3,4,5,8,iplist->root,1,192168008001);
+     iplist->insert(1,2,3,4,5,9,iplist->root,1,192168008001);
+     iplist->insert(1,2,3,4,5,10,iplist->root,1,192168008001);
+     iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008001);
+     //iplist->insert(7,6,4,4,6,4,iplist->root,1,192168004002);
+     //iplist->insert(8,4,5,6,2,1,iplist->root,1,191168008002);
+     //iplist->insert(8,7,2,2,9,5,iplist->root,1,191168009002);
+     node* ss = get_ip("192.168.8.1",iplist->root->child,0);
+     cout<<calc_percentage_of_a_response_for_a_url_of_an_ip(102,4,"192.168.8.1",iplist->root->child);
+     //get_ip_leaf("","",iplist->root);*/
     //iplist->insert(93,iplist->root,1,193168058002);
     //iplist->insert(84,iplist->root,1,193165008002);
     //iplist->insert(85,iplist->root,1,193165008003);*/
