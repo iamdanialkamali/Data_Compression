@@ -138,7 +138,7 @@ string user_changer(string ss){
     return ss;
 
 }
-string get_head_data(string path,int m){
+/*string get_head_data(string path,int m){
     for (int j = 0; j <path.length() ; ++j) {
         if(path[j]==' '){
             path = path.substr(j+1);
@@ -158,6 +158,39 @@ string get_head_data(string path,int m){
         if(m==0){
             if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
                 last=i;
+                break;
+            }
+        }
+        else{
+            if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
+                m--;
+            }
+        }
+
+    }
+    return path.substr(head+1,last-head-1);
+
+}*/
+string get_head_data(string path,int m){
+    for (int j = 0; j <path.length() ; ++j) {
+        if(path[j]==' '){
+            path = path.substr(j+1);
+            break;
+        }
+    }
+    path+='/';
+    string data;
+    int head = 0;
+    int last = 0;
+    for (int i = 0; i <path.length() ; ++i) {
+        if(m==1){
+            if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
+                head=i;
+            }
+        }
+        if(m==0){
+            if(path[i]=='/' or path[i]=='?' or path[i]=='&' or path[i]==' '){
+                last=i+1;
                 break;
             }
         }
@@ -203,7 +236,7 @@ string get_ref_data(string path,int m) {
     return path.substr(head+1,last-head-1);
 
 }
-string get_user_data(string user , int m){
+/*string get_user_data(string user , int m){
 
     user = ' '+ user +' ';
     string data;
@@ -238,6 +271,46 @@ string get_user_data(string user , int m){
             }
 
         }
+    }
+    return user.substr(head+1,last-head-1);
+
+
+}*/
+string get_user_data(string user , int m){
+
+    user = ' '+ user +' ';
+    string data;
+    int head = 0;
+    int last = 0;
+    for (int i = 0; i <user.length() ; ++i) {
+        if(m==1){
+            if(user[i]==' '){
+                head=i;
+            }
+            if(user[i]=='/'){
+                head=i;
+            }
+        }
+        if(m==0){
+            if(user[i]==' '){
+                last=i;
+                break;
+            }
+
+            if(user[i]=='/'){
+                last=i+1;
+                break;
+            }
+        }
+        else{
+            if(user[i]==' '){
+                m--;
+            }
+            if(user[i]=='/'){
+                m--;
+            }
+        }
+
     }
     return user.substr(head+1,last-head-1);
 
@@ -1153,7 +1226,7 @@ void xmlparser(string path) {
                      convertor(time), HostList->root, 1, str_to_ip(host));
 }
 ///////////////////////////////////Phase2//////////////////////////////////////////////////////////////////
-string get_ip_leaf(string before,string req , node* sub){
+/*string get_ip_leaf(string before,string req , node* sub){
     string temp = before;
     while (sub->next!= nullptr){
 
@@ -1208,11 +1281,115 @@ node* get_ip(string ip , node* sub,short lvl){
         if(sub->data.ip==temp){
             return get_ip(ip,sub->child,lvl+1);
         }
-       /* if (sub->isleaf){
+
+
+        sub = sub->next;
+    }
+
+}
+int count(TimeNode* timeNode){
+    if(timeNode== nullptr){
+        return 0;
+    } else{
+        return count(timeNode->next)+1;
+    }
+}
+*/
+///////
+string get_ip_leaf(string before,string req , node* sub){
+    string temp = before;
+    while (sub->next!= nullptr){
+
+    }
+    if(sub->isleaf){
+        cout<<before<<'\n';
+    }
+
+}
+void requestURL(string requrl , headlist*sub,node*sub1){
+    // gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
+}
+string getUser(int id , string ss ,usernode * sub) {
+    string res = ss;
+
+    if (sub->id > 0 && sub->id != id) {
+        return "";
+    }
+    if(sub->id == id){
+        return res+sub->name ;
+    }
+    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
+        return getUser(id,res, sub->sibiling) + getUser(id, res+ sub->name, sub->child);
+    }
+    if(sub->child!= nullptr && sub->sibiling== nullptr){
+        return getUser(id, res + sub->name , sub->child);
+    }
+
+    if(sub->child== nullptr && sub->sibiling!= nullptr){
+        return getUser(id,res, sub->sibiling);
+    }
+}
+string getreq(int id , string ss, headNode * sub){
+    string res = ss;
+
+    if (sub->id > 0 && sub->id != id) {
+        return "";
+    }
+    if(sub->id == id){
+        string ss = res;
+        if(sub->method=='G'){
+            ss = "GET "+ss;
+        }else if(sub->method=='O'){
+            ss = "OPTIONS "+ss;
+        }else if(sub->method=='U'){
+            ss = "PUT "+ss;
+        }else if(sub->method=='S'){
+            ss = "POST "+ss;
+        }else if(sub->method=='D'){
+            ss = "DELETE "+ss;
+        }else if(sub->method=='C'){
+            ss = "CONNECT "+ss;
+        }else if(sub->method=='H'){
+            ss = "HEAD "+ss;
+        }
+        ss = ss+ sub->data;
+        if(sub->http== true){
+            ss  = ss+ "HTTP/1.0";
+        }
+        if(sub->http== false){
+            ss  = ss+ "HTTP/1.1";
+        }
+        return ss;
+
+
+        return res+sub->data ;
+    }
+    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
+        return getreq(id,res, sub->sibiling) + getreq(id, res+ sub->data, sub->child);
+    }
+    if(sub->child!= nullptr && sub->sibiling== nullptr){
+        return getreq(id, res + sub->data , sub->child);
+    }
+
+    if(sub->child== nullptr && sub->sibiling!= nullptr){
+        return getreq(id,res, sub->sibiling);
+    }
+}
+node* get_ip(string ip , node* sub,short lvl){
+    while (sub!=nullptr) {
+        int temp = getthree(str_to_ip(ip),lvl);
+        if (sub->isleaf && sub->data.ip==temp){
+            //cout<<sub->child->data.datalist->holder->time->time;
+            return sub;
+        }
+        if(sub->data.ip==temp){
+            return get_ip(ip,sub->child,lvl+1);
+        }
+        if (sub->isleaf){
             /*while (sub!= nullptr){
-            }
-            cout<<sub->data.ip;
-        }*/
+            }*/
+            //  cout<<sub->data.ip;
+        }
 
         sub = sub->next;
     }
@@ -1226,6 +1403,36 @@ int count(TimeNode* timeNode){
     }
 }
 
+///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
+int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
+    int cnt1 = 0;
+    int cnt2 = 0;
+    int rescode = get_code_index(responseCode);
+    int id =url;
+    //ref->insert(ref->root,1,url);
+    node * node1 = get_ip(ip , sub,0)->child;
+    DataHolder* datanode = node1->data.datalist->holder;
+    while (datanode!= nullptr){
+        int tempid  = datanode->data[3];
+        if(id==tempid){
+            int temp = datanode->data[1];
+            if( rescode==temp){
+                cnt1 += 1*count(datanode->time);
+                cnt2+= 1*count(datanode->time);
+            } else{
+                cnt2+= 1*count(datanode->time);
+            }
+
+        }
+        datanode=datanode->next;
+
+    }
+    cnt1=cnt1*100;
+    return(cnt1/cnt2);
+}
+
+
+///////
 ///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
 int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
     int cnt1 = 0;
@@ -1253,6 +1460,8 @@ int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, s
     cnt1=cnt1*100;
     return(cnt1/cnt2);
 }
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
