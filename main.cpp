@@ -532,6 +532,15 @@ public:
             }
         }
         return true;
+    }bool has_req(int id,DataHolder * dataHolder){
+        DataHolder *holder = dataHolder;
+        while (holder!= nullptr){
+            if(holder->data[1]==id){
+                return true;
+            }
+            holder= holder->next;
+        }
+        return false;
     }
 
 };
@@ -1121,7 +1130,7 @@ void xmlparser(string path) {
                        cout << "time : " <<convertor(time)<< '\n';
                         cout << "host : " << host << '\n';*/
                         HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent)
-                                ,headlist->insert(Head)
+                                ,HeadList->insert(HeadList->root,1,Head)
                                 ,RefererList->insert(RefererList->root, 1, referer)
                                 , get_code_index(str_to_int(responsecode))
                                 ,str_to_int(requestsize),
@@ -1402,6 +1411,43 @@ int count(TimeNode* timeNode){
         return count(timeNode->next)+1;
     }
 }
+bool gotoleaf(int id ,node* sub ,string ss){
+    /*node * temp =sub;
+   while(temp!= nullptr){
+        node * nexttemp =temp;
+        while(nexttemp!= nullptr){
+            if(nexttemp->isleaf){
+                cout<<nexttemp->data.ip<<'\n';
+            }
+
+            nexttemp = nexttemp->next;
+        }
+        temp = temp->child;
+    }*/
+    if(sub->isleaf){
+        string dd = ss+'.'+int_to_string(sub->data.ip);
+        if(sub->child->data.datalist->has_req(id,sub->child->data.datalist->holder)){
+            dd= dd.substr(3);
+            cout<<dd<<'\n';
+        }
+
+    }
+    if(sub->child!= nullptr && sub->next!= nullptr) {
+        return gotoleaf(id,sub->next ,ss) & gotoleaf(id,sub->child , ss+'.'+int_to_string(sub->data.ip));
+    }
+    if(sub->child!= nullptr && sub->next== nullptr){
+        return gotoleaf(id,sub->child,ss +'.'+int_to_string(sub->data.ip));
+    }
+
+    if(sub->child== nullptr && sub->next!= nullptr){
+        return gotoleaf(id,sub->next ,ss);
+    }
+    if(sub->child== nullptr && sub->next== nullptr){
+        return 0;
+    }
+
+}
+
 
 ///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
 int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
@@ -1434,7 +1480,7 @@ int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, s
 
 ///////
 ///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
-int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
+/*int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
     int cnt1 = 0;
     int cnt2 = 0;
     int rescode = responseCode;
@@ -1460,7 +1506,7 @@ int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, s
     cnt1=cnt1*100;
     return(cnt1/cnt2);
 }
-
+*/
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1537,15 +1583,55 @@ int main() {
 }
 */
 int main(){
-        headlist *headlist1 = new headlist() ;
-        headlist1->insert(headlist1->root ,1,"GET /cms/wp-login.php HTTP/1.1");
-        getreq(1,"",headlist1->root) ;
-        // xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
+        //xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
+        /*     userlist * userlist1 = new userlist();
+             userlist1->insert(userlist1->root,1,"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
+             userlist1->insert(userlist1->root,1,"Mozilla/5.1 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
+             userlist1->insert(userlist1->root,1,"Mozilla/5.2 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
+             userlist1->insert(userlist1->root,1,"Mozilla/5.3 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
 
-        while (true){
-            cout<<"Done"<<'\n';
+             usernode *root =userlist1->root;
+             cout << getUser(1,"",root->child)<<'\n' <<getUser(2,"",root->child)<<'\n'<<getUser(3,"",root->child)<<'\n'<<getUser(4,"",root->child)<<'\n';
+        *//*
+             headlist *headlist1 = new headlist();
+             headlist1->insert(headlist1->root,1,"GET /mainpage1/news?limit=10&offset=0 HTTP/1.1");
+             headlist1->insert(headlist1->root,1,"GET /mainpage2/news?limit=10&offset=0 HTTP/1.1");
+             headlist1->insert(headlist1->root,1,"GET /mainpage3/news?limit=10&offset=0 HTTP/1.1");
+             headlist1->insert(headlist1->root,1,"GET /mainpage4/news?limit=10&offset=0 HTTP/1.1");
 
-        }
+             headNode *root =headlist1->root ;
+             cout << getreq(1,"",root)<<'\n'<< getreq(2,"",root)<<'\n'<< getreq(3,"",root)<<'\n'<< getreq(4,"",root)<<'\n';
+                */
+        Iplist *iplist = new Iplist();
+        iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
+        iplist->insert(1,2,3,4,4,6,iplist->root,1,192168008002);
+        iplist->insert(1,2,3,4,5,8,iplist->root,1,192168008003);
+        iplist->insert(1,2,3,4,5,9,iplist->root,1,192168008004);
+        iplist->insert(1,2,3,4,5,1,iplist->root,1,192168008005);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008006);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008007);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008008);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,192160008009);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008010);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168007011);
+        iplist->insert(1,5,3,4,5,5,iplist->root,1,198168008012);
+
+        gotoleaf(2,iplist->root,"");
+        //iplist->insert(7,6,4,4,6,4,iplist->root,1,192168004002);
+        //iplist->insert(8,4,5,6,2,1,iplist->root,1,191168008002);
+        // iplist->insert(8,7,2,2,9,5,iplist->root,1,191168009002);
+        //node* ss = get_ip("192.168.8.3",iplist->root->child,0);
+        //cout<< ss->child->data.datalist->req_is_in(ss->child->data.datalist->holder,2);
+        //cout<<ss->child->data.datalist->holder->time->time;
+        //cout<<calc_percentage_of_a_response_for_a_url_of_an_ip(102,4,"192.168.8.1",iplist->root->child);
+        //get_ip_leaf("","",iplist->root);*/
+        //iplist->insert(93,iplist->root,1,193168058002);
+        //iplist->insert(84,iplist->root,1,193165008002);
+        //iplist->insert(85,iplist->root,1,193165008003);*/
+       /* while (true){
+                    cout<<"Done"<<'\n';
+
+                }*/
 }
 
 
