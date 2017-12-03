@@ -10,6 +10,7 @@
 #include <bitset>
 #include <string>
 #include<time.h>
+#include <chrono>
 using namespace std;
 int16_t responsecodes[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
 
@@ -582,6 +583,7 @@ struct namenode{
 };
 struct refnode{
     unsigned int id;
+    bool secure;
     string name;
     refnode* child  ;
     refnode* sibiling ;
@@ -611,6 +613,9 @@ public:
             string data = get_ref_data(path,final_lvl);
             if (sub->child== nullptr) {
                 sub->child = new refnode();
+                if(path[4]=='s'){
+                    sub->child->secure=true;
+                }
                 sub->child->name=data;
                 count++;
                 sub->child->id=count;
@@ -626,6 +631,10 @@ public:
                 }
                 sub->sibiling = new refnode();
                 sub->sibiling->name=data;
+
+                if(path[4]=='s'){
+                    sub->sibiling->secure= true;
+                }
                 count++;
                 sub->sibiling->id=count;
                 return count;
@@ -691,6 +700,9 @@ public:
                     }
                     sub->sibiling= new refnode();
                     sub->sibiling->name=data;
+                    if(path[4]=='s'){
+                        sub->sibiling->secure= true;
+                    }
                     return insert(sub->sibiling, lvl + 1, path);
 
                 }
@@ -1084,6 +1096,204 @@ public:
 
 };
 ////////////////////////////////////////Parser/////////////////////////////
+string get_ip_leaf(string before,string req , node* sub){
+    string temp = before;
+    while (sub->next!= nullptr){
+
+    }
+    if(sub->isleaf){
+        cout<<before<<'\n';
+    }
+
+}
+void requestURL(string requrl , headlist*sub,node*sub1){
+    // gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
+}
+string getUser(int id , string ss ,usernode * sub) {
+    string res = ss;
+
+    if (sub->id > 0 && sub->id != id) {
+        return "";
+    }
+    if(sub->id == id){
+        return res+sub->name ;
+    }
+    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
+        return getUser(id,res, sub->sibiling) + getUser(id, res+ sub->name, sub->child);
+    }
+    if(sub->child!= nullptr && sub->sibiling== nullptr){
+        return getUser(id, res + sub->name , sub->child);
+    }
+
+    if(sub->child== nullptr && sub->sibiling!= nullptr){
+        return getUser(id,res, sub->sibiling);
+    }
+}
+string getref(int id , string ss ,refnode * sub) {
+    string res = ss;
+
+    if (sub->id > 0 && sub->id != id && sub->sibiling== nullptr) {
+        return "";
+    }
+    if(sub->id == id){
+        if(sub->secure){
+            return "https://"+res+sub->name ;
+
+        } else
+        {
+            return "http://"+res+sub->name ;
+
+        }
+
+    }
+    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
+        return getref(id,res, sub->sibiling) + getref(id, res+ sub->name, sub->child);
+    }
+    if(sub->child!= nullptr && sub->sibiling== nullptr){
+        return getref(id, res + sub->name , sub->child);
+    }
+
+    if(sub->child== nullptr && sub->sibiling!= nullptr){
+        return getref(id,res, sub->sibiling);
+    }
+}
+string getreq(int id , string ss, headNode * sub){
+    string res = ss;
+
+    if (sub->id > 0 && sub->id != id && sub->sibiling== nullptr) {
+        return "";
+    }
+    if(sub->id == id){
+        string ss = res;
+        if(sub->method=='G'){
+            ss = "GET "+ss;
+        }else if(sub->method=='O'){
+            ss = "OPTIONS "+ss;
+        }else if(sub->method=='U'){
+            ss = "PUT "+ss;
+        }else if(sub->method=='S'){
+            ss = "POST "+ss;
+        }else if(sub->method=='D'){
+            ss = "DELETE "+ss;
+        }else if(sub->method=='C'){
+            ss = "CONNECT "+ss;
+        }else if(sub->method=='H'){
+            ss = "HEAD "+ss;
+        }
+        ss = ss+ sub->data;
+        if(sub->http== true){
+            ss  = ss+ "HTTP/1.0";
+        }
+        if(sub->http== false){
+            ss  = ss+ "HTTP/1.1";
+        }
+        return ss;
+
+
+        return res+sub->data ;
+    }
+    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
+        return getreq(id,res, sub->sibiling) + getreq(id, res+ sub->data, sub->child);
+    }
+    if(sub->child!= nullptr && sub->sibiling== nullptr){
+        return getreq(id, res + sub->data , sub->child);
+    }
+
+    if(sub->child== nullptr && sub->sibiling!= nullptr){
+        return getreq(id,res, sub->sibiling);
+    }
+}
+node* get_ip(string ip , node* sub,short lvl){
+    while (sub!=nullptr) {
+        int temp = getthree(str_to_ip(ip),lvl);
+        if (sub->isleaf && sub->data.ip==temp){
+            //cout<<sub->child->data.datalist->holder->time->time;
+            return sub;
+        }
+        if(sub->data.ip==temp){
+            return get_ip(ip,sub->child,lvl+1);
+        }
+        sub = sub->next;
+    }
+
+}
+int count(TimeNode* timeNode){
+    if(timeNode== nullptr){
+        return 0;
+    } else{
+        return count(timeNode->next)+1;
+    }
+}
+bool get_all_ips_of_a_request(int id ,node* sub ,string ss){
+    if(sub->isleaf){
+        string dd = ss+'.'+int_to_string(sub->data.ip);
+        if(sub->child->data.datalist->has_req(id,sub->child->data.datalist->holder)){
+            dd= dd.substr(3);
+           // cout<<dd<<'\n';
+        }
+
+    }
+    if(sub->child!= nullptr && sub->next!= nullptr) {
+        return get_all_ips_of_a_request(id,sub->next ,ss) & get_all_ips_of_a_request(id,sub->child , ss+'.'+int_to_string(sub->data.ip));
+    }
+    if(sub->child!= nullptr && sub->next== nullptr){
+        return get_all_ips_of_a_request(id,sub->child,ss +'.'+int_to_string(sub->data.ip));
+    }
+
+    if(sub->child== nullptr && sub->next!= nullptr){
+        return get_all_ips_of_a_request(id,sub->next ,ss);
+    }
+    if(sub->child== nullptr && sub->next== nullptr){
+        return 0;
+    }
+
+}
+bool get_all_requests_of_an_ip(node * sub,string ip,headNode * headNode,refnode* refnode, usernode * usernode){
+    DataHolder *star= get_ip(ip,sub->child,0)->child->data.datalist->holder;
+    TimeNode * timeNode1;
+    while(star!= nullptr){
+        timeNode1=star->time;
+        while (timeNode1!= nullptr) {
+            cout<<"LOG:"<<'\n';
+            cout << getUser(star->data[0], "", usernode) << '\n';
+            cout << getref(star->data[2], "", refnode) << '\n';
+            cout << getreq(star->data[1], "", headNode) << '\n';
+            cout<< responsecodes[star->data[3]]<<'\n';
+            cout<< star->data[4]<<'\n';
+            cout << timeNode1->time<<'\n';
+            timeNode1=timeNode1->next;
+        }
+        star = star->next;
+    }
+}
+
+///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
+int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
+    int cnt1 = 0;
+    int cnt2 = 0;
+    int rescode = get_code_index(responseCode);
+    int id =url;
+    //ref->insert(ref->root,1,url);
+    node * node1 = get_ip(ip , sub,0)->child;
+    DataHolder* datanode = node1->data.datalist->holder;
+    while (datanode!= nullptr){
+        int tempid  = datanode->data[3];
+        if(id==tempid){
+            int temp = datanode->data[1];
+            if( rescode==temp){
+                cnt1 += 1*count(datanode->time);
+                cnt2+= 1*count(datanode->time);
+            } else{
+                cnt2+= 1*count(datanode->time);
+            }
+
+        }
+        datanode=datanode->next;
+
+    }
+    cnt1=cnt1*100;
+    return(cnt1/cnt2);
+}
 
 void xmlparser(string path) {
     userlist *UserAgentList = new userlist();
@@ -1233,6 +1443,7 @@ void xmlparser(string path) {
             , get_code_index(str_to_int(responsecode))
             ,str_to_int(requestsize),
                      convertor(time), HostList->root, 1, str_to_ip(host));
+    get_all_requests_of_an_ip(HostList->root,"31.184.177.122",HeadList->root,RefererList->root,UserAgentList->root);
 }
 ///////////////////////////////////Phase2//////////////////////////////////////////////////////////////////
 /*string get_ip_leaf(string before,string req , node* sub){
@@ -1305,177 +1516,7 @@ int count(TimeNode* timeNode){
 }
 */
 ///////
-string get_ip_leaf(string before,string req , node* sub){
-    string temp = before;
-    while (sub->next!= nullptr){
 
-    }
-    if(sub->isleaf){
-        cout<<before<<'\n';
-    }
-
-}
-void requestURL(string requrl , headlist*sub,node*sub1){
-    // gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
-}
-string getUser(int id , string ss ,usernode * sub) {
-    string res = ss;
-
-    if (sub->id > 0 && sub->id != id) {
-        return "";
-    }
-    if(sub->id == id){
-        return res+sub->name ;
-    }
-    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
-        return getUser(id,res, sub->sibiling) + getUser(id, res+ sub->name, sub->child);
-    }
-    if(sub->child!= nullptr && sub->sibiling== nullptr){
-        return getUser(id, res + sub->name , sub->child);
-    }
-
-    if(sub->child== nullptr && sub->sibiling!= nullptr){
-        return getUser(id,res, sub->sibiling);
-    }
-}
-string getreq(int id , string ss, headNode * sub){
-    string res = ss;
-
-    if (sub->id > 0 && sub->id != id) {
-        return "";
-    }
-    if(sub->id == id){
-        string ss = res;
-        if(sub->method=='G'){
-            ss = "GET "+ss;
-        }else if(sub->method=='O'){
-            ss = "OPTIONS "+ss;
-        }else if(sub->method=='U'){
-            ss = "PUT "+ss;
-        }else if(sub->method=='S'){
-            ss = "POST "+ss;
-        }else if(sub->method=='D'){
-            ss = "DELETE "+ss;
-        }else if(sub->method=='C'){
-            ss = "CONNECT "+ss;
-        }else if(sub->method=='H'){
-            ss = "HEAD "+ss;
-        }
-        ss = ss+ sub->data;
-        if(sub->http== true){
-            ss  = ss+ "HTTP/1.0";
-        }
-        if(sub->http== false){
-            ss  = ss+ "HTTP/1.1";
-        }
-        return ss;
-
-
-        return res+sub->data ;
-    }
-    if(sub->child!= nullptr && sub->sibiling!= nullptr) {
-        return getreq(id,res, sub->sibiling) + getreq(id, res+ sub->data, sub->child);
-    }
-    if(sub->child!= nullptr && sub->sibiling== nullptr){
-        return getreq(id, res + sub->data , sub->child);
-    }
-
-    if(sub->child== nullptr && sub->sibiling!= nullptr){
-        return getreq(id,res, sub->sibiling);
-    }
-}
-node* get_ip(string ip , node* sub,short lvl){
-    while (sub!=nullptr) {
-        int temp = getthree(str_to_ip(ip),lvl);
-        if (sub->isleaf && sub->data.ip==temp){
-            //cout<<sub->child->data.datalist->holder->time->time;
-            return sub;
-        }
-        if(sub->data.ip==temp){
-            return get_ip(ip,sub->child,lvl+1);
-        }
-        if (sub->isleaf){
-            /*while (sub!= nullptr){
-            }*/
-            //  cout<<sub->data.ip;
-        }
-
-        sub = sub->next;
-    }
-
-}
-int count(TimeNode* timeNode){
-    if(timeNode== nullptr){
-        return 0;
-    } else{
-        return count(timeNode->next)+1;
-    }
-}
-bool gotoleaf(int id ,node* sub ,string ss){
-    /*node * temp =sub;
-   while(temp!= nullptr){
-        node * nexttemp =temp;
-        while(nexttemp!= nullptr){
-            if(nexttemp->isleaf){
-                cout<<nexttemp->data.ip<<'\n';
-            }
-
-            nexttemp = nexttemp->next;
-        }
-        temp = temp->child;
-    }*/
-    if(sub->isleaf){
-        string dd = ss+'.'+int_to_string(sub->data.ip);
-        if(sub->child->data.datalist->has_req(id,sub->child->data.datalist->holder)){
-            dd= dd.substr(3);
-            cout<<dd<<'\n';
-        }
-
-    }
-    if(sub->child!= nullptr && sub->next!= nullptr) {
-        return gotoleaf(id,sub->next ,ss) & gotoleaf(id,sub->child , ss+'.'+int_to_string(sub->data.ip));
-    }
-    if(sub->child!= nullptr && sub->next== nullptr){
-        return gotoleaf(id,sub->child,ss +'.'+int_to_string(sub->data.ip));
-    }
-
-    if(sub->child== nullptr && sub->next!= nullptr){
-        return gotoleaf(id,sub->next ,ss);
-    }
-    if(sub->child== nullptr && sub->next== nullptr){
-        return 0;
-    }
-
-}
-
-
-///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
-int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
-    int cnt1 = 0;
-    int cnt2 = 0;
-    int rescode = get_code_index(responseCode);
-    int id =url;
-    //ref->insert(ref->root,1,url);
-    node * node1 = get_ip(ip , sub,0)->child;
-    DataHolder* datanode = node1->data.datalist->holder;
-    while (datanode!= nullptr){
-        int tempid  = datanode->data[3];
-        if(id==tempid){
-            int temp = datanode->data[1];
-            if( rescode==temp){
-                cnt1 += 1*count(datanode->time);
-                cnt2+= 1*count(datanode->time);
-            } else{
-                cnt2+= 1*count(datanode->time);
-            }
-
-        }
-        datanode=datanode->next;
-
-    }
-    cnt1=cnt1*100;
-    return(cnt1/cnt2);
-}
 
 
 ///////
@@ -1583,8 +1624,8 @@ int main() {
 }
 */
 int main(){
-        //xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
-        /*     userlist * userlist1 = new userlist();
+        xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
+          /*   userlist * userlist1 = new userlist();
              userlist1->insert(userlist1->root,1,"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
              userlist1->insert(userlist1->root,1,"Mozilla/5.1 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
              userlist1->insert(userlist1->root,1,"Mozilla/5.2 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
@@ -1595,14 +1636,14 @@ int main(){
         *//*
              headlist *headlist1 = new headlist();
              headlist1->insert(headlist1->root,1,"GET /mainpage1/news?limit=10&offset=0 HTTP/1.1");
-             headlist1->insert(headlist1->root,1,"GET /mainpage2/news?limit=10&offset=0 HTTP/1.1");
+             headlist1->insert(headlist1->root,1,"GET /mainpage1/news?limit=10&offset=0 HTTP/1.1");
              headlist1->insert(headlist1->root,1,"GET /mainpage3/news?limit=10&offset=0 HTTP/1.1");
              headlist1->insert(headlist1->root,1,"GET /mainpage4/news?limit=10&offset=0 HTTP/1.1");
 
              headNode *root =headlist1->root ;
              cout << getreq(1,"",root)<<'\n'<< getreq(2,"",root)<<'\n'<< getreq(3,"",root)<<'\n'<< getreq(4,"",root)<<'\n';
-                */
-        Iplist *iplist = new Iplist();
+               */
+      /*  Iplist *iplist = new Iplist();
         iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
         iplist->insert(1,2,3,4,4,6,iplist->root,1,192168008002);
         iplist->insert(1,2,3,4,5,8,iplist->root,1,192168008003);
@@ -1616,7 +1657,15 @@ int main(){
         iplist->insert(1,5,3,4,5,5,iplist->root,1,192168007011);
         iplist->insert(1,5,3,4,5,5,iplist->root,1,198168008012);
 
-        gotoleaf(2,iplist->root,"");
+        cout<<get_ip("192.168.8.2",iplist->root->child,0)->data.ip;*/
+        /*get_all_ips_of_a_request(5,iplist->root,"");
+        reflist * khar = new reflist();
+        khar->insert(khar->root,1,"https://localhost:9020");
+        khar->insert(khar->root,1,"https://localhost:9021");
+        khar->insert(khar->root,1,"https://localhost:9022");
+        khar->insert(khar->root,1,"https://localhost:9023");
+        khar->insert(khar->root,1,"https://localhost:9024");
+        cout<<getref(5,"",khar->root);
         //iplist->insert(7,6,4,4,6,4,iplist->root,1,192168004002);
         //iplist->insert(8,4,5,6,2,1,iplist->root,1,191168008002);
         // iplist->insert(8,7,2,2,9,5,iplist->root,1,191168009002);
