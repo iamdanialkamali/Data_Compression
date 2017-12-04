@@ -12,6 +12,7 @@
 #include<time.h>
 #include <chrono>
 using namespace std;
+using namespace chrono;
 int16_t responsecodes[62]= {100,101,102,200,201,202,203,204,205,206,207,208,226,300,301,302,303,304,305,306,307,308,400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,426,428,429,431,451,500,501,502,503,504,505,506,507,508,509,510,511};
 
 
@@ -427,19 +428,77 @@ int utc_to_time(string utc){
 
 
 }
-unsigned int convertor(string time){
-    unsigned int num = str_to_int(time.substr(18,2))+str_to_int(time.substr(12,2))*3600+str_to_int(time.substr(15,2))*60+str_to_int(time.substr(0,2))*3600*24+(month_to_int(time.substr(3,3))-1)*3600*24*30+(str_to_int(time.substr(9,2))-1)*3600*24*365;
-    return num;
 
-
-
-
-}
 string int_to_string(int a){
     stringstream ss;
     ss << a;
     string str = ss.str();
     return str;
+}
+string int_to_month(int month){
+    if(month==1){
+        return "Jan";
+    }
+    if(month==2){
+        return "Feb";
+    }
+    if(month==3){
+        return "Mar" ;
+    }
+    if(month==4){
+        return "Apr" ;
+    }
+    if(month==5){
+        return "May" ;
+    }
+    if(month==6){
+        return "Jun" ;
+    }
+    if(month==7){
+        return "Jul" ;
+    }
+    if(month==8){
+        return "Aug" ;
+    }
+    if(month==9){
+        return "Sep" ;
+    }
+    if(month==10){
+        return "Oct" ;
+    }
+    if(month==11){
+        return "Nov" ;
+    }
+    if(month==12){
+        return "Dec" ;
+    }
+
+
+
+
+
+}
+unsigned int convertor(string time){
+    ///19/Oct/2017:08:53:05 +0000
+    int tm_sec = str_to_int(time.substr(18,2));
+    int tm_min = str_to_int(time.substr(15,2));
+    int tm_hour = str_to_int(time.substr(12,2));
+    int tm_yday = str_to_int(time.substr(0,2)) ;
+    int tm_month = month_to_int(time.substr(3,3)) ;
+    int tm_year = str_to_int(time.substr(7,4)) - 2000 ;
+    //  cout << tm_year ;
+    return   tm_sec + tm_min*60 + tm_hour*(60*60) + tm_yday*(24*60*60) +tm_month*(30*24*60*60) + tm_year*(12*30*24*60*60);
+
+}
+string convert_back (unsigned int time){
+    string year = to_string(2000 + time/(12*30*24*60*60)) ;
+    int  month = (time%(12*30*24*60*60))/(30*24*60*60);
+    string day = to_string(((time%(12*30*24*60*60))%(30*24*60*60))/(24*60*60));
+    string hour = to_string((((time%(12*30*24*60*60))%(30*24*60*60))%(24*60*60))/(60*60));
+    string min = to_string(((((time%(12*30*24*60*60))%(30*24*60*60))%(24*60*60))%(60*60))/(60));
+    string sec = to_string(((((time%(12*30*24*60*60))%(30*24*60*60))%(24*60*60))%(60*60))%(60));
+    ///19/Oct/2017:08:53:45 +0000
+    return day+'/'+int_to_month(month)+'/'+year +':'+hour+':'+min+':'+sec +" +0000";
 }
 
 ////////////// Structs//////////////////////////////
@@ -797,6 +856,12 @@ public:
                     }
                     sub = sub->next;
                 }
+
+                    if(sub->data.ip==data) {
+                        sub->child->data.datalist->add_data(useragent,head,refrer,rescode,reqsize,time);
+                        return;
+
+                }
                 sub->next = new node();
                 sub->next->data.ip=data;
                 sub->next->isleaf= true;
@@ -1096,19 +1161,7 @@ public:
 
 };
 ////////////////////////////////////////Parser/////////////////////////////
-string get_ip_leaf(string before,string req , node* sub){
-    string temp = before;
-    while (sub->next!= nullptr){
 
-    }
-    if(sub->isleaf){
-        cout<<before<<'\n';
-    }
-
-}
-void requestURL(string requrl , headlist*sub,node*sub1){
-    // gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
-}
 string getUser(int id , string ss ,usernode * sub) {
     string res = ss;
 
@@ -1127,6 +1180,9 @@ string getUser(int id , string ss ,usernode * sub) {
 
     if(sub->child== nullptr && sub->sibiling!= nullptr){
         return getUser(id,res, sub->sibiling);
+    }
+    if(sub->child== nullptr && sub->sibiling== nullptr){
+        return "";
     }
 }
 string getref(int id , string ss ,refnode * sub) {
@@ -1159,7 +1215,6 @@ string getref(int id , string ss ,refnode * sub) {
 }
 string getreq(int id , string ss, headNode * sub){
     string res = ss;
-
     if (sub->id > 0 && sub->id != id && sub->sibiling== nullptr) {
         return "";
     }
@@ -1192,8 +1247,14 @@ string getreq(int id , string ss, headNode * sub){
 
         return res+sub->data ;
     }
+    if(sub->child== nullptr && sub->sibiling== nullptr){
+        return "";
+    }
     if(sub->child!= nullptr && sub->sibiling!= nullptr) {
-        return getreq(id,res, sub->sibiling) + getreq(id, res+ sub->data, sub->child);
+
+        string s2 = getreq(id, res+ sub->data, sub->child);
+        string s1 = getreq(id,res, sub->sibiling);
+        return  s1 +s2 ;
     }
     if(sub->child!= nullptr && sub->sibiling== nullptr){
         return getreq(id, res + sub->data , sub->child);
@@ -1202,6 +1263,8 @@ string getreq(int id , string ss, headNode * sub){
     if(sub->child== nullptr && sub->sibiling!= nullptr){
         return getreq(id,res, sub->sibiling);
     }
+
+
 }
 node* get_ip(string ip , node* sub,short lvl){
     while (sub!=nullptr) {
@@ -1215,22 +1278,57 @@ node* get_ip(string ip , node* sub,short lvl){
         }
         sub = sub->next;
     }
+}
+void  get_firstTime_request(string ip,node* sub,headNode * headNode,refnode* refnode, usernode * usernode){
+    DataHolder *star= get_ip(ip,sub->child,0)->child->data.datalist->holder;
+    cout<<"LOG:"<<'\n';
+    cout << getUser(star->data[0], "", usernode) << '\n';
+    cout << getref(star->data[2], "", refnode) << '\n';
+    //cout << getreq(star->data[1], "", headNode) << '\n';
+    cout<< responsecodes[star->data[3]]<<'\n';
+    cout<< star->data[4]<<'\n';
+    cout << convert_back(star->time->time)<<'\n';
 
 }
 int count(TimeNode* timeNode){
-    if(timeNode== nullptr){
-        return 0;
-    } else{
-        return count(timeNode->next)+1;
+    int cnt = 0;
+    TimeNode * time=timeNode;
+    while (time!= nullptr){
+        cnt++;
+        time = time->next;
     }
+    return cnt;
 }
 bool get_all_ips_of_a_request(int id ,node* sub ,string ss){
     if(sub->isleaf){
         string dd = ss+'.'+int_to_string(sub->data.ip);
-        if(sub->child->data.datalist->has_req(id,sub->child->data.datalist->holder)){
-            dd= dd.substr(3);
-           // cout<<dd<<'\n';
+        if(sub->data.ip==id) {
+            dd = dd.substr(3);
+            cout << dd << '\n';
         }
+
+    }
+    if(sub->child!= nullptr && sub->next!= nullptr) {
+        return get_all_ips_of_a_request(id,sub->next ,ss) & get_all_ips_of_a_request(id,sub->child , ss+'.'+int_to_string(sub->data.ip));
+    }
+    if(sub->child!= nullptr && sub->next== nullptr){
+        return get_all_ips_of_a_request(id,sub->child,ss +'.'+int_to_string(sub->data.ip));
+    }
+
+    if(sub->child== nullptr && sub->next!= nullptr){
+        return get_all_ips_of_a_request(id,sub->next ,ss);
+    }
+    if(sub->child== nullptr && sub->next== nullptr){
+        return 0;
+    }
+
+}
+bool get_similarity(int id ,node* sub ,string ss){
+    if(sub->isleaf){
+        string dd = ss+'.'+int_to_string(sub->data.ip);
+            dd = dd.substr(3);
+            cout << dd << '\n';
+
 
     }
     if(sub->child!= nullptr && sub->next!= nullptr) {
@@ -1257,17 +1355,79 @@ bool get_all_requests_of_an_ip(node * sub,string ip,headNode * headNode,refnode*
             cout<<"LOG:"<<'\n';
             cout << getUser(star->data[0], "", usernode) << '\n';
             cout << getref(star->data[2], "", refnode) << '\n';
-            cout << getreq(star->data[1], "", headNode) << '\n';
+           // cout << getreq(star->data[1], "", headNode) << '\n';
             cout<< responsecodes[star->data[3]]<<'\n';
             cout<< star->data[4]<<'\n';
-            cout << timeNode1->time<<'\n';
+            cout << convert_back(timeNode1->time)<<'\n';
             timeNode1=timeNode1->next;
         }
         star = star->next;
     }
 }
 
-///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
+int count_2(int rescode ,node* sub,int id){
+    int cnt2 = 0;
+    if(sub->isleaf){
+        DataHolder *dataHolder = sub->child->data.datalist->holder;
+        while (dataHolder!= nullptr){
+            if(dataHolder->data[3]==id)
+            {
+                cnt2 += count(dataHolder->time);
+            }
+            dataHolder=dataHolder->next;
+        }
+        return cnt2;
+    }
+    if(sub->child!= nullptr && sub->next!= nullptr) {
+        return count_2(rescode,sub->next,id) + count_2(rescode,sub->child , id);
+    }
+    if(sub->child!= nullptr && sub->next== nullptr){
+        return count_2(rescode,sub->child,id);
+    }
+
+    if(sub->child== nullptr && sub->next!= nullptr){
+        return count_2(rescode,sub->next ,id);
+    }
+    if(sub->child== nullptr && sub->next== nullptr){
+        return 0;
+    }
+}
+int count_1(int rescode ,node* sub,int id){
+    int cnt2 = 0;
+    if(sub->isleaf){
+
+        DataHolder *dataHolder = sub->child->data.datalist->holder;
+        while (dataHolder!= nullptr){
+            if(dataHolder->data[3]==id and dataHolder->data[1]==rescode)
+            {
+                cnt2 += count(dataHolder->time);
+            }
+            dataHolder=dataHolder->next;
+        }
+        return cnt2;
+    }
+    if(sub->child!= nullptr && sub->next!= nullptr) {
+        return count_2(rescode,sub->next,id) + count_2(rescode,sub->child , id);
+    }
+    if(sub->child!= nullptr && sub->next== nullptr){
+        return count_2(rescode,sub->child,id);
+    }
+
+    if(sub->child== nullptr && sub->next!= nullptr){
+        return count_2(rescode,sub->next ,id);
+    }
+    if(sub->child== nullptr && sub->next== nullptr){
+        return 0;
+    }
+}
+
+
+int calc_percentage_of_a_response_for_a_url(int rescode ,node* sub,int id){
+    int a = count_1(rescode,sub,id);
+    int b = count_2(rescode,sub,id);
+
+}
+
 int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
     int cnt1 = 0;
     int cnt2 = 0;
@@ -1281,26 +1441,25 @@ int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, s
         if(id==tempid){
             int temp = datanode->data[1];
             if( rescode==temp){
-                cnt1 += 1*count(datanode->time);
-                cnt2+= 1*count(datanode->time);
+                cnt1 += count(datanode->time);
+                cnt2+= count(datanode->time);
             } else{
-                cnt2+= 1*count(datanode->time);
+                cnt2+= count(datanode->time);
             }
 
         }
         datanode=datanode->next;
 
     }
-    cnt1=cnt1*100;
-    return(cnt1/cnt2);
+    return(100*cnt1/(cnt2+cnt1));
 }
 
 void xmlparser(string path) {
     userlist *UserAgentList = new userlist();
-    Iplist * HostList = new Iplist();
-    reflist * RefererList = new reflist();
+    Iplist *HostList = new Iplist();
+    reflist *RefererList = new reflist();
     headlist *HeadList = new headlist();
-    namelist * headlist = new namelist();
+    namelist *headlist = new namelist();
 
     string Head;
     string UserAgent;
@@ -1322,39 +1481,23 @@ void xmlparser(string path) {
                 char w = '0';
                 input >> w;
                 if (w == 'L') {
-                    if(!one) {
-                        /*  cout<<"LOG: \n";
-                          cout << "head :" <<
-                                           HeadList->insert(HeadList->root,1,Head.substr(0,Head.length()-8))
-                                                 << '\n';
-                          cout << "useragent: " ;
-                         cout<<
-                              UserAgentList->insert(UserAgentList->root, 1, UserAgent)
-                                      << '\n';*/
-                        /*cout << "referer: " <<  referer<<'\n'<<
-                         RefererList->insert(RefererList->root,1, referer)<< '\n';
-                        cout << "rq size: " << requestsize << '\n';*/
-                        //cout << "res code: " <<responsecode<<'\n';
-                        //get_code_index(str_to_int(responsecode))<< '\n';
-                        /*
-                       cout << "time : " <<convertor(time)<< '\n';
-                        cout << "host : " << host << '\n';*/
-                        HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent)
-                                ,HeadList->insert(HeadList->root,1,Head)
-                                ,RefererList->insert(RefererList->root, 1, referer)
-                                , get_code_index(str_to_int(responsecode))
-                                ,str_to_int(requestsize),
+                    if (!one) {
+
+                        HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent),
+                                         HeadList->insert(HeadList->root, 1, Head),
+                                         RefererList->insert(RefererList->root, 1, referer),
+                                         get_code_index(str_to_int(responsecode)), str_to_int(requestsize),
                                          convertor(time), HostList->root, 1, str_to_ip(host));
 
                     }
                     one = false;
-                    time ="";
-                    UserAgent="";
-                    Head ="";
-                    host="";
+                    time = "";
+                    UserAgent = "";
+                    Head = "";
+                    host = "";
                     referer = "";
-                    requestsize="";
-                    responsecode="";
+                    requestsize = "";
+                    responsecode = "";
                     input.ignore(3, '>');
                 }
                 if (w == 'H') {
@@ -1363,7 +1506,7 @@ void xmlparser(string path) {
                         input.ignore(3, '>');
                         input.get(buffer, 2000, '>');
                         Head = buffer;
-                        Head = Head.substr(0,Head.length()-6);
+                        Head = Head.substr(0, Head.length() - 6);
                         //cout<<Head<<'\n';
 
                     }
@@ -1373,7 +1516,7 @@ void xmlparser(string path) {
                         //  input.seekp(3, ios::cur);
                         input.get(buffer, 2000, '>');
                         host = buffer;
-                        host = host.substr(0,host.length()-6);
+                        host = host.substr(0, host.length() - 6);
                         // cout << host << '\n';
 
                     }
@@ -1384,7 +1527,7 @@ void xmlparser(string path) {
                     // input.seekp(5,ios::cur);
                     input.get(buffer, 2000, '>');
                     time = buffer;
-                    time = time.substr(0,time.length()-6);
+                    time = time.substr(0, time.length() - 6);
                     //cout<<time<<'\n';
                 }
                 if (w == 'U') {
@@ -1393,7 +1536,7 @@ void xmlparser(string path) {
                     //input.seekp(9,ios::cur);
                     input.get(buffer, 2000, '>');
                     UserAgent = buffer;
-                    UserAgent=UserAgent.substr(0,UserAgent.length()-11);
+                    UserAgent = UserAgent.substr(0, UserAgent.length() - 11);
                     // cout<<UserAgent<<'\n';
                 }
                 if (w == 'R') {
@@ -1406,7 +1549,7 @@ void xmlparser(string path) {
                         // input.seekp(5,ios::cur);
                         input.get(buffer, 2000, '>');
                         referer = buffer;
-                        referer=referer.substr(0,referer.length()-9);
+                        referer = referer.substr(0, referer.length() - 9);
                         //  cout<<referer<<'\n';
                     } else if (w == 's') {
                         // cout << "Response Code:";
@@ -1415,7 +1558,7 @@ void xmlparser(string path) {
                         //input.seekp(10,ios::cur);
                         input.get(buffer, 2000, '>');
                         responsecode = buffer;
-                        responsecode=responsecode.substr(0,responsecode.length()-14);
+                        responsecode = responsecode.substr(0, responsecode.length() - 14);
                         //cout<<buffer<<'\n';
                     } else if (w == 'q') {
                         // cout << "RequestSize:";
@@ -1424,263 +1567,69 @@ void xmlparser(string path) {
                         //input.seekp(9,ios::cur);
                         input.get(buffer, 2000, '>');
                         requestsize = buffer;
-                        requestsize=requestsize.substr(0,requestsize.length()-13);
+                        requestsize = requestsize.substr(0, requestsize.length() - 13);
                         //cout<<requestsize<<'\n';
                     }
                 }
         }
     }
-/*    cout << "head :" << HeadList->insert(HeadList->root,1,Head) << '\n';
-    cout << "useragent: " << UserAgentList->insert(UserAgentList->root,1,UserAgent) << '\n';
-    cout << "referer: " << RefererList->insert(RefererList->root,1,referer) << '\n';
-    cout << "rq size: " << requestsize << '\n';
-    cout << "res code: " << get_code_index( str_to_int(responsecode))  << '\n';
-    cout << "time : " << convertor(time) << '\n';
-    cout << "host : " << host << '\n';*/
-    HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent)
-            ,HeadList->insert(HeadList->root,1,Head)
-            ,RefererList->insert(RefererList->root, 1, referer)
-            , get_code_index(str_to_int(responsecode))
-            ,str_to_int(requestsize),
+
+    HostList->insert(UserAgentList->insert(UserAgentList->root, 1, UserAgent),
+                     HeadList->insert(HeadList->root, 1, Head), RefererList->insert(RefererList->root, 1, referer),
+                     get_code_index(str_to_int(responsecode)), str_to_int(requestsize),
                      convertor(time), HostList->root, 1, str_to_ip(host));
-    get_all_requests_of_an_ip(HostList->root,"31.184.177.122",HeadList->root,RefererList->root,UserAgentList->root);
-}
+/*
+ * vector<string> (string reqUrl)
+vector<Request> get_all requests_of_an_ip(string ip)
+int calc_percentage_of_a_response_for_a_url(int responseCode, string url)
+int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,
+string url, string ip)
+Request get_firstTime_request(string ip)
+vector<string> get_similar_ip()*/
+    while (true) {
+        cout<<"Welcome To CLI!"<<'\n';
+        string input;
+        cin >> input;
+        if (input.substr(0, 24) == "get_all_ips_of_a_request") {
+            string url = input.substr(25, input.length() - 26);
+            get_all_ips_of_a_request(HeadList->insert(HeadList->root, 1, url), HostList->root, "");
+        } else if (input.substr(0, 25) == "get_all_requests_of_an_ip") {
+            string ip = input.substr(26, input.length() - 27);
+            get_all_requests_of_an_ip(HostList->root, ip, HeadList->root, RefererList->root, UserAgentList->root);
+        } else if (input.substr(0, 52) ==
+                   "int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)") {
+            string data = input.substr(53, input.length() - 54);
+            string temp[3];
+            int cnt = 0;
+            for (char c : data) {
+                if (c != ',') {
+                    temp[cnt] += c;
+                } else {
+                    cnt++;
+                }
+            }
+            cout << calc_percentage_of_a_response_for_a_url_of_an_ip(str_to_int(temp[0]),
+                                                                     HeadList->insert(HeadList->root, 1, temp[1]),
+                                                                     temp[2], HostList->root);
+
+        } else if (input.substr(0, 21) == "get_firstTime_request") {
+            string ip = input.substr(22, input.length() - 23);
+            get_firstTime_request(ip,HostList->root,HeadList->root,RefererList->root,UserAgentList->root);
+        } else if(input.substr(0,14)=="get_similar_ip"){
+            get_similarity(0,HostList->root,"");
+        }
+
+
+    }
 ///////////////////////////////////Phase2//////////////////////////////////////////////////////////////////
-/*string get_ip_leaf(string before,string req , node* sub){
-    string temp = before;
-    while (sub->next!= nullptr){
-
-    }
-    if(sub->isleaf){
-        cout<<before<<'\n';
-    }
-
 }
-void requestURL(string requrl , headlist*sub,node*sub1){
-    // gotoleafs(sub->insert(sub->root,1,requrl),"",sub1);
-}
-string getreq(int id , string ss, headNode * sub){
-    string temp ="";
-    if(sub->id==0){
-        if(sub->sibiling!= nullptr) {
-            temp = temp + getreq(id, "", sub->sibiling);
-        }
-        if(sub->child!= nullptr) {
-            temp = temp + getreq(id, "", sub->child);
-        }
-
-    }
-    if (sub->id != 0) {
-        string temp1 ="";
-        if (id == sub->id) {
-            if (sub->http == false) {
-                temp1 = temp1 + "HTTP/1.0";
-            } else {
-                temp1 = temp1 + "HTTP/1.1";
-            }
-            if (sub->method = 'G') { temp = "GET" + temp; }
-            else if (sub->method = 'O') { temp = "OPTIONS" + temp; }
-            else if (sub->method = 'U') { temp = "PUT" + temp; }
-            else if (sub->method = 'S') { temp = "POST" + temp; }
-            else if (sub->method = 'H') { temp = "HEAD" + temp; }
-            else if (sub->method = 'D') { temp = "DELETE" + temp; }
-            else if (sub->method = 'C') { temp = "CONNECT" + temp; }
-            else if (sub->method = 'T') { temp = "TRACE" + temp; }
-            return temp1;
-            //cout << temp << '\n';
-        } else return "";
-    }
-}
-node* get_ip(string ip , node* sub,short lvl){
-    while (sub!=nullptr) {
-        int temp = getthree(str_to_ip(ip),lvl);
-        if (sub->isleaf and sub->data.ip==temp){
-            //cout<<sub->child->data.datalist->holder->time->time;
-            return sub;
-        }
-        if(sub->data.ip==temp){
-            return get_ip(ip,sub->child,lvl+1);
-        }
-
-
-        sub = sub->next;
-    }
-
-}
-int count(TimeNode* timeNode){
-    if(timeNode== nullptr){
-        return 0;
-    } else{
-        return count(timeNode->next)+1;
-    }
-}
-*/
-///////
-
-
-
-///////
-///int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,string url, string ip)
-/*int calc_percentage_of_a_response_for_a_url_of_an_ip(int responseCode,int url, string ip,node* sub){
-    int cnt1 = 0;
-    int cnt2 = 0;
-    int rescode = responseCode;
-    int id =url;
-    //ref->insert(ref->root,1,url);
-    node * node1 = get_ip(ip , sub,0)->child;
-    DataHolder* datanode = node1->data.datalist->holder;
-    while (datanode!= nullptr){
-        int tempid  = datanode->data[3];
-        if(id==tempid){
-            int temp = datanode->data[1];
-            if( rescode==temp){
-                cnt1 += 1*count(datanode->time);
-                cnt2+= 1*count(datanode->time);
-            } else{
-                cnt2+= 1*count(datanode->time);
-            }
-
-        }
-        datanode=datanode->next;
-
-    }
-    cnt1=cnt1*100;
-    return(cnt1/cnt2);
-}
-*/
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-int main() {
 
+int main(){
+       //xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
 
-    //cout<<"End"<<'\n';
-
-    //while(true){
-
-    //}
-    //   xmlparser("/home/alan/Documents/C++/DS_Project/out.xml");
-   /*  DataList* dataList = new DataList();
-      dataList->add_data(1,2,3,4,5,6);
-      dataList->add_data(1,2,3,4,5,7);
-      dataList->add_data(1,2,3,4,4,8);
-      dataList->add_data(1,2,3,4,5,9);
-      dataList->add_data(1,2,3,4,5,10);
-
-/*
-     //cout<<getthree(192168001001,0);
-      Iplist *iplist = new Iplist();
-      iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
-      iplist->insert(1,2,3,4,4,6,iplist->root,1,192168008001);
-      iplist->insert(1,2,3,4,5,8,iplist->root,1,192168008001);
-      iplist->insert(1,2,3,4,5,9,iplist->root,1,192168008001);
-      iplist->insert(1,2,3,4,5,10,iplist->root,1,192168008001);
-      iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008001);
-      //iplist->insert(7,6,4,4,6,4,iplist->root,1,192168004002);
-      //iplist->insert(8,4,5,6,2,1,iplist->root,1,191168008002);
-      //iplist->insert(8,7,2,2,9,5,iplist->root,1,191168009002);
-      node* ss = get_ip("192.168.8.2",iplist->root->child,0);
-      cout<<ss->data.ip;
-      //cout<<calc_percentage_of_a_response_for_a_url_of_an_ip(102,4,"192.168.8.1",iplist->root->child);
-      //get_ip_leaf("","",iplist->root);*/
-    //iplist->insert(93,iplist->root,1,193168058002);
-    //iplist->insert(84,iplist->root,1,193165008002);
-    //iplist->insert(85,iplist->root,1,193165008003);*/
-    /*  iplist->insert(192068001001,iplist->root);
-      iplist->insert(192168001005,iplist->root);
-      iplist->insert(192168001004,iplist->root);
-      iplist->insert(192168001001,iplist->root);*/
-    /* holder holder15;
-    holder15.data=10;
-    cout<<holder15.data;
-    //string string1 = getdata("/25/221351/51513/",1);
-    //  cout<<string1;
-    */
-    /*reflist *khar = new reflist();
-  //  khar->insert(khar->root,1,"http://localhost:9020");
-   /* string ss =get_ref_data("http://localhost:9020",1);
-    int ssss = ref_lvl_counter("http://localhost:9020");
-    int lvl = ref_lvl_counter("https://test.ariogames.ir/news/31");
- /*   Iplist * khar = new Iplist;
-    khar->insert(55,khar->root,1,192168001002);
-    khar->insert(55,khar->root,1,192168011002);
-    khar->insert(55,khar->root,1,192168841002);
-   */
-    /*headlist * khar = new headlist;
-     khar->insert(khar->root,1,"GET /ad/ba/ca/dd/df?sg&fdd HTTP/1.0");
-     khar->insert(khar->root,1,"GET /mainpage/news?lidmit=10&offset=0&ssssss HTTP/1.1");
-     khar->insert(khar->root,1,"GET /mainpage/news?limait=10&offset=0&ssssss&SDASD=454 HTTP/1.0");
-     khar->insert(khar->root,1,"GET /mainpage/news?limdit=10&offset=0&sssssddds&SDASD=454 HTTP/1.1");
-     cout<<getreq(2,"",khar->root);
-    cout<<"Done";
-    while (true){
-    cout<<"Datadonde"<<'\n';
     }
 
 
-    return 1;
-
-}
-*/
-int main(){
-        xmlparser("/home/alan/Documents/C++/DS_Project/xml.xml");
-          /*   userlist * userlist1 = new userlist();
-             userlist1->insert(userlist1->root,1,"Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-             userlist1->insert(userlist1->root,1,"Mozilla/5.1 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-             userlist1->insert(userlist1->root,1,"Mozilla/5.2 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-             userlist1->insert(userlist1->root,1,"Mozilla/5.3 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36");
-
-             usernode *root =userlist1->root;
-             cout << getUser(1,"",root->child)<<'\n' <<getUser(2,"",root->child)<<'\n'<<getUser(3,"",root->child)<<'\n'<<getUser(4,"",root->child)<<'\n';
-        *//*
-             headlist *headlist1 = new headlist();
-             headlist1->insert(headlist1->root,1,"GET /mainpage1/news?limit=10&offset=0 HTTP/1.1");
-             headlist1->insert(headlist1->root,1,"GET /mainpage1/news?limit=10&offset=0 HTTP/1.1");
-             headlist1->insert(headlist1->root,1,"GET /mainpage3/news?limit=10&offset=0 HTTP/1.1");
-             headlist1->insert(headlist1->root,1,"GET /mainpage4/news?limit=10&offset=0 HTTP/1.1");
-
-             headNode *root =headlist1->root ;
-             cout << getreq(1,"",root)<<'\n'<< getreq(2,"",root)<<'\n'<< getreq(3,"",root)<<'\n'<< getreq(4,"",root)<<'\n';
-               */
-      /*  Iplist *iplist = new Iplist();
-        iplist->insert(1,2,3,4,5,6,iplist->root,1,192168008001);
-        iplist->insert(1,2,3,4,4,6,iplist->root,1,192168008002);
-        iplist->insert(1,2,3,4,5,8,iplist->root,1,192168008003);
-        iplist->insert(1,2,3,4,5,9,iplist->root,1,192168008004);
-        iplist->insert(1,2,3,4,5,1,iplist->root,1,192168008005);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008006);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008007);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008008);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,192160008009);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168008010);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,192168007011);
-        iplist->insert(1,5,3,4,5,5,iplist->root,1,198168008012);
-
-        cout<<get_ip("192.168.8.2",iplist->root->child,0)->data.ip;*/
-        /*get_all_ips_of_a_request(5,iplist->root,"");
-        reflist * khar = new reflist();
-        khar->insert(khar->root,1,"https://localhost:9020");
-        khar->insert(khar->root,1,"https://localhost:9021");
-        khar->insert(khar->root,1,"https://localhost:9022");
-        khar->insert(khar->root,1,"https://localhost:9023");
-        khar->insert(khar->root,1,"https://localhost:9024");
-        cout<<getref(5,"",khar->root);
-        //iplist->insert(7,6,4,4,6,4,iplist->root,1,192168004002);
-        //iplist->insert(8,4,5,6,2,1,iplist->root,1,191168008002);
-        // iplist->insert(8,7,2,2,9,5,iplist->root,1,191168009002);
-        //node* ss = get_ip("192.168.8.3",iplist->root->child,0);
-        //cout<< ss->child->data.datalist->req_is_in(ss->child->data.datalist->holder,2);
-        //cout<<ss->child->data.datalist->holder->time->time;
-        //cout<<calc_percentage_of_a_response_for_a_url_of_an_ip(102,4,"192.168.8.1",iplist->root->child);
-        //get_ip_leaf("","",iplist->root);*/
-        //iplist->insert(93,iplist->root,1,193168058002);
-        //iplist->insert(84,iplist->root,1,193165008002);
-        //iplist->insert(85,iplist->root,1,193165008003);*/
-       /* while (true){
-                    cout<<"Done"<<'\n';
-
-                }*/
-}
 
 
